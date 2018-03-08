@@ -95,13 +95,13 @@ CreateSStatesForConstantB<-function(n,B)
     NotOneInRow=1:n
     NotOneInRow=NotOneInRow[NotOneInRow!=ChoiceToBeOne]
     
-    #Choice 0 to (n-1) to be B+1 (Note. The choice of 0 may be reduced if n-1 > B-1 ,as we will not have enough unique to pick)
-    for(ChoiceToBeFull in max(0,n-B):(n-1))
+    #Choice 0 to (n-1) to be B+2 (Note. The choice of 0 may be reduced if n-1 > B ,as we will not have enough unique to pick)
+    for(ChoiceToBeFull in max(0,n-1-B):(n-1))
     {
       #print(paste("Our current Choice to be full is ",toString(ChoiceToBeFull)))
       if(ChoiceToBeFull==0)
       {
-        #We do not need to assign any to be Full i.e B+1 , so no changes
+        #We do not need to assign any to be Full i.e B+2 , so no changes
         NotAssignedInRow=NotOneInRow
         Row=OneRow
         
@@ -116,7 +116,7 @@ CreateSStatesForConstantB<-function(n,B)
         else
         {
         #For the remaining Not yet assinged elements we need a vector of elements that they can uniquely pick from
-        UniqueStatesLeft=2:B
+        UniqueStatesLeft=2:(B+1)
         
         #Now we want all combinations where we pick the remaining elements
         UniqueCombinationsMatrix<-combinations(length(UniqueStatesLeft),length(NotAssignedInRow),UniqueStatesLeft)
@@ -154,10 +154,10 @@ CreateSStatesForConstantB<-function(n,B)
       
       for(FullCombRow in 1:nrow(FullCombinationsMatrix))
       {
-        #for each combination set these to be B+1
+        #for each combination set these to be B+2
         Row=OneRow
 
-        Row[FullCombinationsMatrix[FullCombRow,]]=B+1
+        Row[FullCombinationsMatrix[FullCombRow,]]=B+2
         #print("Setting selected elements to be Full")
         #print(Row)
         
@@ -184,7 +184,7 @@ CreateSStatesForConstantB<-function(n,B)
         {
         
         #For the remaining Not yet assinged elements we need a vector of elements that they can uniquely pick from
-        UniqueStatesLeft=2:B
+        UniqueStatesLeft=2:(B+1)
         
         #Now we want all combinations where we pick the remaining elements
         UniqueCombinationsMatrix<-combinations(length(UniqueStatesLeft),length(NotAssignedInRow),UniqueStatesLeft)
@@ -236,9 +236,9 @@ CreateSStates<-function(n,BVec)
   {
     for(j in 1:n)
     {
-      if(StateSpace[i,j] > BVec[j]+1)
+      if(StateSpace[i,j] > BVec[j]+2)
       {
-        StateSpace[i,j]=BVec[j]+1
+        StateSpace[i,j]=BVec[j]+2
       }
     }
   }
@@ -327,8 +327,20 @@ CreateSVStatesForConstantBb<-function(n,B,b)
      Block=ceiling(i/nrow(VStates))
      Remainder=((i-1) %% nrow(VStates)) +1
      FullStateSpace[i,1:n]=SStates[Block,]
-     FullStateSpace[i,(n+1):(2*n)]=VStates[Remainder,]
+     
+     #Before we can insert the VState, we need to check that if s=B+2, then we set v=0
+     WorkingVState=VStates[Remainder,]
+     for(j in 1:n)
+     {
+       if(FullStateSpace[i,j]==B+2)
+       {
+         WorkingVState[j]=0
+       }
+     }
+     
+     FullStateSpace[i,(n+1):(2*n)]=WorkingVState
   }
+  FullStateSpace=unique(FullStateSpace)
   return(FullStateSpace)
 }
 
@@ -347,8 +359,20 @@ CreateSVStates<-function(n,BVec,bVec)
     Block=ceiling(i/nrow(VStates))
     Remainder=((i-1) %% nrow(VStates)) +1
     FullStateSpace[i,1:n]=SStates[Block,]
-    FullStateSpace[i,(n+1):(2*n)]=VStates[Remainder,]
+    
+    #Before we can insert the VState, we need to check that if s=B+2, then we set v=0
+    WorkingVState=VStates[Remainder,]
+    for(j in 1:n)
+    {
+      if(FullStateSpace[i,j]==BVec[j]+2)
+      {
+        WorkingVState[j]=0
+      }
+    }
+    
+    FullStateSpace[i,(n+1):(2*n)]=WorkingVState
   }
+  FullStateSpace=unique(FullStateSpace)
   return(FullStateSpace) 
 }
 
@@ -405,30 +429,41 @@ NewSState<-function(CurrentSState,NodeMovedTo,BVec)
     }
     else
     {
-      NewSState[i]=min(CurrentSState[i]+1,BVec[i]+1)
+      NewSState[i]=min(CurrentSState[i]+1,BVec[i]+2)
     }
   }
   return(NewSState)
 }
 
 #Evolution of V States function
-NewVState<-function(CurrentVState,NodeMovedTo,bVec,lambdaVec)
+#note. We need to know the current S state , as if one value is B+2, then v is set to 0
+NewVState<-function(CurrentVState,NewSState,NodeMovedTo,BVec,bVec,lambdaVec)
 {
   #We aim to store the New V states and the probability of ending up in one.
   NewVState=matrix(nrow=(bVec[NodeMovedTo]+1),ncol=length(CurrentVState))
   NewVStateProb=vector(length=(bVec[NodeMovedTo]+1))
   
+  WorkingVState=CurrentVState
+  #We now need to set any v=0 if there s=B+2
+  for(i in 1:length(NewSState))
+  {
+    if(NewSState[i]==BVec[i]+2)
+    {
+      WorkingVState[i]=0
+    }
+  }
+  
   for(i in 1:(bVec[NodeMovedTo]+1))
   {
     #copy the current state
-    NewVState[i,]=CurrentVState
+    NewVState[i,]=WorkingVState
     #Store the new evolved value
     NewVState[i,NodeMovedTo]=(i-1)
    
     #Also store the probability in a vector
     NewVStateProb[i]=TruncPoissonPMF(lambdaVec[NodeMovedTo],bVec[NodeMovedTo],i-1)
   }
-  
+
   return(list(State=NewVState,Prob=NewVStateProb))
 }
 
@@ -438,8 +473,8 @@ NewSVState<-function(CurrentSVState,NodeMovedTo,BVec,bVec,lambdaVec)
   #Get seperate information from prior functions
   n=length(CurrentSVState)/2
   NewSState=NewSState(CurrentSVState[1:n],NodeMovedTo,BVec)
-  NewVStates=NewVState(CurrentSVState[(n+1):(2*n)],NodeMovedTo,bVec,lambdaVec)$State
-  NewVStatesProbs=NewVState(CurrentSVState[(n+1):(2*n)],NodeMovedTo,bVec,lambdaVec)$Prob
+  NewVStates=NewVState(CurrentSVState[(n+1):(2*n)],NewSState,NodeMovedTo,BVec,bVec,lambdaVec)$State
+  NewVStatesProbs=NewVState(CurrentSVState[(n+1):(2*n)],NewSState,NodeMovedTo,BVec,bVec,lambdaVec)$Prob
   
   #Rejoin the S and V together
   NewSVState=matrix(nrow=(bVec[NodeMovedTo]+1),ncol=(2*n))
@@ -470,6 +505,7 @@ IdenityRow<-function(Vec,Mat)
 #Action Cost C_j
 CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,BVec,LambdaVec)
 {
+  stopifnot(length(StateVector)==2*n)
   if(NodeMovedTo!=Node)
   {
     if(StateVector[Node] >= BVec[Node])
@@ -496,6 +532,7 @@ CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,BVec,LambdaV
       return(0)
     }
   }
+  print("Error: I have finished without returning anythiny")
 }
 
 #Total action cost
@@ -504,15 +541,21 @@ CostOfAction<-function(StateVector,NodeMovedTo,n,CostVec,BVec,LambdaVec)
   Sum=0
   for(j in 1:n)
   {
+
     Sum=Sum+CostOfActionOnNode(j,StateVector,NodeMovedTo,n,CostVec,BVec,LambdaVec)
+
   }
+
   return(Sum)
 }
   
 #create for a state the constraint matrix parts for a particular state
-CreateConstraintMatrixForState<-function(StateVector,AdjMatrix,n,BVec,bVec,CostVec,LambdaVec)
+CreateConstraintMatrixForState<-function(StateVector,AdjMatrix,n,BVec,bVec,CostVec,LambdaVec,SVStateSpace=NULL)
 {
-  SVStateSpace=CreateSVStates(n,BVec,bVec)
+  if(is.null(SVStateSpace))
+  {
+    SVStateSpace=CreateSVStates(n,BVec,bVec)
+  }
 
   #To find out out the list of nodes we can choose to move to we need to look which s_i=1 in our state
   CurrentNode=min(StateVector[1:n]) #just look in the S state space
@@ -572,7 +615,9 @@ CreateConstraintMatrixForState<-function(StateVector,AdjMatrix,n,BVec,bVec,CostV
 CreateConstraintMatrix<-function(AdjMatrix,n,BVec,bVec,CostVec,LambdaVec)
 {
   #We now repeat for each possible state the construction and bind together
+  print("Constructing SV State Space")
   SVStateSpace=CreateSVStates(n,BVec,bVec)
+  print("Constructed")
   
   NoOfVariables=1+nrow(SVStateSpace)
   
@@ -581,10 +626,30 @@ CreateConstraintMatrix<-function(AdjMatrix,n,BVec,bVec,CostVec,LambdaVec)
   
   for(i in 1:nrow(SVStateSpace))
   {
+    print("On state")
+    print(SVStateSpace[i,])
+
+    
     #For each state run prior construction and retreive
-    FullConstraintMatrix=rbind(FullConstraintMatrix,CreateConstraintMatrixForState(SVStateSpace[i,],AdjMatrix,n,BVec,bVec,CostVec,LambdaVec)$LHS)
-    Fullbounds=c(Fullbounds,CreateConstraintMatrixForState(SVStateSpace[i,],AdjMatrix,n,BVec,bVec,CostVec,LambdaVec)$RHS)
+    FullConstraintMatrix=rbind(FullConstraintMatrix,CreateConstraintMatrixForState(SVStateSpace[i,],AdjMatrix,n,BVec,bVec,CostVec,LambdaVec,SVStateSpace)$LHS)
+    Fullbounds=c(Fullbounds,CreateConstraintMatrixForState(SVStateSpace[i,],AdjMatrix,n,BVec,bVec,CostVec,LambdaVec,SVStateSpace)$RHS)
+    
   }
   return(list(MatrixConstraints=FullConstraintMatrix,VectorBounds=Fullbounds))
+}
+
+SolveLP<-function(AdjMatrix,n,BVec,bVec,CostVec,LambdaVec)
+{
+  CreatedAb=CreateConstraintMatrix(AdjMatrix,n,BVec,bVec,CostVec,LambdaVec)
+  A=CreatedAb$MatrixConstraints
+  b=CreatedAb$VectorBounds
+  
+  
+  Objdir="max"
+  Objective=c(1,rep(0,(ncol(A)-1)))
+  Constdir=rep("<=",nrow(A))
+  
+  Solved=lp(Objdir,Objective,A,Constdir,b)
+  return(list(Value=Solved ,Solution=Solved$solution))
 }
 
