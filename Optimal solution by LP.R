@@ -20,7 +20,7 @@ TruncPoissonPMF<-function(lambda,b,i)
     return(((lambda^i)/factorial(i))*exp(-lambda))
   } 
   if(i==b)
-  {
+  { 
     Prob=1
     for(j in 0:(b-1))
     {
@@ -33,16 +33,20 @@ TruncPoissonPMF<-function(lambda,b,i)
 
 TruncPoissionCDF<-function(lambda,b,i)
 {
-  if(i!=b)
+  if(i < b)
+  {
+    return(0)
+  }
+  else if(i!=b)
   { 
     Sum=0
     for(j in 0:i)
     {
-      Sum=Sum+truncpoissonpmf(lambda,b,j)
+      Sum=Sum+TruncPoissonPMF(lambda,b,j)
     }
     return(Sum)
   }
-  if(i==b)
+  else if(i==b)
   {
     return(1)
   }  
@@ -50,24 +54,28 @@ TruncPoissionCDF<-function(lambda,b,i)
 
 TruncPoissonHazard<-function(lambda,b,i)
 {
-  if(i!=b)
+  if(i > b)
+  {
+    return(0)
+  }
+  else if(i!=b)
   {
     Sum=0
     for(j in i:b)
     {
-      Sum=Sum+truncpoissonpmf(lambda,b,j)
+      Sum=Sum+TruncPoissonPMF(lambda,b,j)
     }
     return(Sum)
   }
-  if(i==b)
+  else if(i==b)
   {
-    return(truncpoissonpmf(lambda,b,i))
+    return(TruncPoissonPMF(lambda,b,i))
   }  
 }  
 
 #Function to work out the size of the state space, we will assume that B>n
 #Note. B is definded as being the smallest integer such that we are less than it, so B+1 is the last state space
-SizeOfOMEGA(n,B,b)
+SizeOfOMEGA<-function(n,B,b)
 {
   SumOfOmegas=0
   for(i in 0:(n-1))
