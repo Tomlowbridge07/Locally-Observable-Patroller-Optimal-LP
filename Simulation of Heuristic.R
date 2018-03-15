@@ -1,9 +1,12 @@
 source("Heuristics.R")
 library(stats)
+library(ggplot2)
+library(reshape2)
 
-SimulateVStateEvolution<-function(NodeToEvolve,vVec,LambdaVec,bVec)
+SimulateVStateEvolution<-function(NodeToEvolve,NewsVec,vVec,xVec,LambdaVec,bVec)
 {
-  NewvVec=vVec
+  BVec=ceiling(xVec)
+  NewvVec=(NewVState(vVec,NewsVec,NodeToEvolve,BVec,bVec,LambdaVec)$State)[1,]
   NewvVec[NodeToEvolve]=min(bVec[NodeToEvolve],rpois(1,LambdaVec[NodeToEvolve]))
   return(NewvVec)
 }
@@ -26,7 +29,7 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
       #Set up initial States
       StartNode=StartingNodeHeuristic(n,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
       
-      print(paste("Starting at ",toString(StartNode)))
+      #print(paste("Starting at ",toString(StartNode)))
       
       sVec=BVec+1
       sVec[StartNode]=1
@@ -52,18 +55,33 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
       
       #Evolve System
       sVec=NewSState(OldsVec,MoveToNode,BVec)
-      vVec=SimulateVStateEvolution(MoveToNode,OldvVec,LambdaVec,bVec)
+      vVec=SimulateVStateEvolution(MoveToNode,sVec,OldvVec,xVec,LambdaVec,bVec)
       
-      print(paste("Moved to ",toString(MoveToNode),"Costing ",toString(RunCost[run])))
+      #print(paste("Moved to ",toString(MoveToNode),"Costing ",toString(RunCost[run])))
     }
     
   }
   AverageCost=sum(RunCost)/NumberOfRunSteps
   print(paste("Average cost is ",toString(AverageCost)))
+  return(list(Average=AverageCost,CostForStep=RunCost))
 }
 
-
-
+SimulationExperiment<-function(NumberOfTrials,NumberOfRunSteps,HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
+{
+ #We repeat the simulation
+  RunningCostMatrix=matrix(0,nrow = 0,ncol=NumberOfRunSteps)
+  AveragecostVec=vector(length=NumberOfTrials)
+  
+  for(trial in 1:NumberOfTrials)
+  {
+    Simulation=SimulationForEvolution(NumberOfRunSteps,HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec)
+   RunningCostMatrix=rbind(RunningCostMatrix,Simulation$CostForStep)
+   AveragecostVec[trial]=Simulation$Average
+   #print(RunningCostMatrix)
+  }
+  AverageAmongSimulations=sum(AveragecostVec)/NumberOfTrials
+  return(AverageAmongSimulations)
+}
 
 
 

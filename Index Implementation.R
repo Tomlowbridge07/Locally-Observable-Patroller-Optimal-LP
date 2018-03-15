@@ -95,14 +95,17 @@ EqualStepIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   
   if(s <= B && v < vMax)
   {
+    
     return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax)*(s/B))
   }
   else if(s <= B && v >=vMax)
   {
+    
     return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax)*(s/B))
   }
   else
   {
+   
     return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax))
   }
 }
@@ -138,7 +141,7 @@ IndicesForNodes<-function(n,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVe
   #Now for each node we find its index
   Indices=vector(length=n)
   for(i in 1:n)
-  {
+  { 
     Indices[i]=IndexForNodeFunction(sVec[i],vVec[i],CostVec[i],LambdaVec[i],bVec[i],xVec[i],vMaxVec[i])
   }
   

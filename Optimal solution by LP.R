@@ -407,11 +407,11 @@ NewVState<-function(CurrentVState,NewSState,NodeMovedTo,BVec,bVec,lambdaVec)
 }
 
 #NOTE. This function does not return an actual possible state, but a mean state
-NewMeanVState<-function(CurrentVState,NodeMovedTo,bVec,lambdaVec)
+NewMeanVState<-function(CurrentVState,NewSState,NodeMovedTo,BVec,bVec,lambdaVec)
 {
-  NewVState=CurrentVState
-  NewVState[NodeMovedTo]=TruncPoissionMean(lambdaVec[NodeMovedTo],bVec[NodeMovedTo])
-  return(NewVState)
+  NewV=(NewVState(CurrentVState,NewSState,NodeMovedTo,BVec,bVec,lambdaVec)$State)[1,]
+  NewV[NodeMovedTo]=TruncPoissionMean(lambdaVec[NodeMovedTo],bVec[NodeMovedTo])
+  return(NewV)
 }
 
 #Evolution of SV States
@@ -466,11 +466,11 @@ CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaV
     {
       if(xVec[Node]>1)
       {
-        return(CostVec[Node] * (LambdaVec[Node] * (BVec[Node]-xVec[Node]-1) + StateVector[n+Node]))
+        return(CostVec[Node] * (LambdaVec[Node] * (BVec[Node]-xVec[Node]) + StateVector[n+Node]))
       }
       else if(xVec[Node] <= 1)
       {
-        return(CostVec[Node] * (LambdaVec[Node] * (BVec[Node]-2*xVec[Node]) + StateVector[n+Node]))
+        return(CostVec[Node] * StateVector[n+Node])
       }
     }
     else
@@ -484,11 +484,11 @@ CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaV
     {
       if(xVec[Node]>1)
       {
-        return(0)
+        return(CostVec[Node] * LambdaVec[Node])
       }
       else if(xVec[Node] <= 1)
       {
-        return(CostVec[Node] * LambdaVec[Node] * (1-xVec[Node]))
+        return(CostVec[Node] * LambdaVec[Node] * xVec[Node])
       }
     }
     else
@@ -619,6 +619,7 @@ SolveLP<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
   Objective=c(1,rep(0,(ncol(A)-1)))
   Constdir=rep("<=",nrow(A))
   
+  print("Starting to solve")
   Solved=lp(Objdir,Objective,A,Constdir,b)
   return(list(Value=Solved ,Solution=Solved$solution))
 }
