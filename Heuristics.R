@@ -107,7 +107,7 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
       
 
       NodeIndexes=IndicesForNodes(n,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)
-
+      print(NodeIndexes)
       
       BenefitForAction=Actions * NodeIndexes
       
