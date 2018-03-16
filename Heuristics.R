@@ -123,8 +123,14 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
 
         }
       }
+      print(paste("I am about to compare all paths of length ",toString(Step)))
+      print(Paths)
+      print("They have a benefit of")
+      print(BenefitForPath)
       BestPath=Paths[which.max(BenefitForPath),]
       BestPathforStep[Step,]=BestPath
+      print("I have chosen the path")
+      print(BestPath)
     }
     else
     {
@@ -164,8 +170,14 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
         }
         
       }
+      print(paste("I am about to compare all paths of length ",toString(Step)))
+      print(Paths)
+      print("They have a benefit of")
+      print(BenefitForPath)
       BestPath=Paths[which.max(BenefitForPath),]
       BestPathforStep[Step,]=BestPath
+      print("I have chosen the path")
+      print(BestPath)
 
     }
     
@@ -181,10 +193,17 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
     #We use determinsitic evolution to the mean state in v
     AverageCostforPath[i]=DeterministicCostEvaluationOfPath(BestPathforStep[i,],n,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)$Average
   }
-  #print(AverageCostforPath)
+  print("about to print paths and determinisitic cost of paths")
+  print(BestPathforStep)
+  print(AverageCostforPath)
   OverallBestPath=BestPathforStep[which.min(AverageCostforPath),]
   return(OverallBestPath[1])
 }
+
+
+
+
+
 
 #Here we sum the indices up over the number of steps for all paths of the Number of steps
 MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)

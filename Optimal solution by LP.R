@@ -588,6 +588,7 @@ CreateConstraintMatrix<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
   print("Constructing SV State Space")
   SVStateSpace=CreateSVStates(n,BVec,bVec)
   print("Constructed")
+  print(SVStateSpace)
   
   NoOfVariables=1+nrow(SVStateSpace)
   
@@ -614,10 +615,13 @@ SolveLP<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
   A=CreatedAb$MatrixConstraints
   b=CreatedAb$VectorBounds
   
+  print(A)
+  print(b)
   
   Objdir="max"
   Objective=c(1,rep(0,(ncol(A)-1)))
   Constdir=rep("<=",nrow(A))
+
   
   print("Starting to solve")
   Solved=lp(Objdir,Objective,A,Constdir,b)

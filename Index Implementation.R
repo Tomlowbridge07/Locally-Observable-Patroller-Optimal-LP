@@ -129,6 +129,23 @@ IncreasingStepIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   }
 }
 
+RandomIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
+{
+  return(runif(1,min=0,max=1))
+}
+
+WaitingIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
+{
+  if(s==1)
+  {
+    return(1)
+  }
+  else
+  {
+    return(0)
+  }
+}
+
 IndicesForNodes<-function(n,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
 {
   if(is.null(vMaxVec))

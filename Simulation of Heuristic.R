@@ -24,40 +24,65 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
   
   for(run in 0:NumberOfRunSteps)
   {
+    print(paste("On run ",toString(run)))
     if(run==0)
     {
       #Set up initial States
-      StartNode=StartingNodeHeuristic(n,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
+      StartNode=StartingNodeHeuristic(n,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,vMaxVec)
       
-      #print(paste("Starting at ",toString(StartNode)))
+      print(paste("Starting at ",toString(StartNode)))
       
       sVec=BVec+1
       sVec[StartNode]=1
+      print("Current S is ")
+      print(sVec)
       
       vVec=vector(length=n)
       for(i in 1:n)
       {
-        vVec[i]=TruncPoissionMean(LambdaVec[i],bVec[i])
+        if(i==StartNode)
+        {
+         vVec[i]=TruncPoissionMean(LambdaVec[i],bVec[i])
+         print(paste("I have just set the V to",toString(vVec[i]),"Using lam=",toString(LambdaVec[i])," and b=",toString(bVec[i])))
+        }
+        else
+        {
+          vVec[i]=0
+        }
+
       }
+      print("Current v is")
+      print(vVec)
     }
     else
     {
       #Perform a run
       OldsVec=sVec
       OldvVec=vVec
+      print("Current S is ")
+      print(OldsVec)
+      print("Current V is ")
+      print(OldvVec)
+      
       
       #decide where to move to using heuristic
       MoveToNode=HeuristicFunction(HeuristicDepth,n,AdjacencyMatrix,IndexForNodeFunction,OldsVec,OldvVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)
-      #print(MoveToNode)
+      print(paste("Choosing to move to",toString(MoveToNode)))
       
       #Calculate cost of doing such an action
       RunCost[run]=CostOfAction(c(OldsVec,OldvVec),MoveToNode,n,CostVec,xVec,LambdaVec)
+      print(paste("Cost of action is",toString(RunCost[run])))
       
       #Evolve System
       sVec=NewSState(OldsVec,MoveToNode,BVec)
+      print("Evolved S is ")
+      print(sVec)
       vVec=SimulateVStateEvolution(MoveToNode,sVec,OldvVec,xVec,LambdaVec,bVec)
+      #vVec=NewMeanVState(OldvVec,sVec,MoveToNode,BVec,bVec,LambdaVec)
+      print("Evolved v is")
+      print(vVec)
       
-      #print(paste("Moved to ",toString(MoveToNode),"Costing ",toString(RunCost[run])))
+      print(paste("Moved to ",toString(MoveToNode),"Costing ",toString(RunCost[run])))
     }
     
   }
