@@ -464,14 +464,15 @@ CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaV
   {
     if(NodeMovedTo==Node)
     {
-      if(xVec[Node]>1)
-      {
-        return(CostVec[Node] * (LambdaVec[Node] * (BVec[Node]-xVec[Node]) + StateVector[n+Node]))
-      }
-      else if(xVec[Node] <= 1)
-      {
-        return(CostVec[Node] * StateVector[n+Node])
-      }
+      # if(xVec[Node]>1)
+      # {
+      #   return(CostVec[Node] * (LambdaVec[Node] * (BVec[Node]-xVec[Node]) + StateVector[n+Node]))
+      # }
+      # else if(xVec[Node] <= 1)
+      # {
+      #   return(CostVec[Node] * StateVector[n+Node])
+      # }
+      return(0)
     }
     else
     {
@@ -482,14 +483,15 @@ CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaV
   {
     if(NodeMovedTo==Node)
     {
-      if(xVec[Node]>1)
-      {
-        return(CostVec[Node] * LambdaVec[Node])
-      }
-      else if(xVec[Node] <= 1)
-      {
-        return(CostVec[Node] * LambdaVec[Node] * xVec[Node])
-      }
+      # if(xVec[Node]>1)
+      # {
+      #   return(CostVec[Node] * LambdaVec[Node])
+      # }
+      # else if(xVec[Node] <= 1)
+      # {
+      #   return(CostVec[Node] * LambdaVec[Node] * xVec[Node])
+      # }
+      return(0)
     }
     else
     {

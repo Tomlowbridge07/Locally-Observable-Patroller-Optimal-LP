@@ -127,7 +127,11 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
       print(Paths)
       print("They have a benefit of")
       print(BenefitForPath)
-      BestPath=Paths[which.max(BenefitForPath),]
+      #Identify the maximal elements
+      MaximalElements=which(BenefitForPath==max(BenefitForPath))
+      #We now choose one at random
+      ChosenMax=MaximalElements[sample(1:length(MaximalElements),1)]
+      BestPath=Paths[ChosenMax,]
       BestPathforStep[Step,]=BestPath
       print("I have chosen the path")
       print(BestPath)
@@ -174,7 +178,13 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
       print(Paths)
       print("They have a benefit of")
       print(BenefitForPath)
-      BestPath=Paths[which.max(BenefitForPath),]
+      #Identify the maximal elements
+      MaximalElements=which(BenefitForPath==max(BenefitForPath))
+      print("Printing maximal elements")
+      print(MaximalElements)
+      #We now choose one at random
+      ChosenMax=MaximalElements[sample(1:length(MaximalElements),1)]
+      BestPath=Paths[ChosenMax,]
       BestPathforStep[Step,]=BestPath
       print("I have chosen the path")
       print(BestPath)
@@ -196,7 +206,11 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
   print("about to print paths and determinisitic cost of paths")
   print(BestPathforStep)
   print(AverageCostforPath)
-  OverallBestPath=BestPathforStep[which.min(AverageCostforPath),]
+  #Identify the maximal elements
+  MinimalElements=which(AverageCostforPath==min(AverageCostforPath))
+  #We now choose one at random
+  ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
+  OverallBestPath=BestPathforStep[ChosenMin,]
   return(OverallBestPath[1])
 }
 
@@ -250,7 +264,11 @@ MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
           PenaltyForPath=c(PenaltyForPath,PenaltyForAction[action])
         }
       }
-      BestPath=Paths[which.min(PenaltyForPath),]
+      #Identify the maximal elements
+      MinimalElements=which(PenaltyForPath==min(PenaltyForPath))
+      #We now choose one at random
+      ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
+      BestPath=Paths[ChosenMin,]
       BestPathforStep[Step,]=BestPath
     }
     else
@@ -289,7 +307,11 @@ MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
         }
         
       }
-      BestPath=Paths[which.min(PenaltyForPath),]
+      #Identify the maximal elements
+      MinimalElements=which(PenaltyForPath==min(PenaltyForPath))
+      #We now choose one at random
+      ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
+      BestPath=Paths[ChosenMin,]
       BestPathforStep[Step,]=BestPath
     }
     
@@ -306,7 +328,11 @@ MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
     AverageCostforPath[i]=DeterministicCostEvaluationOfPath(BestPathforStep[i,],n,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)$Average
   }
   #print(AverageCostforPath)
-  OverallBestPath=BestPathforStep[which.min(AverageCostforPath),]
+  #Identify the maximal elements
+  MinimalElements=which(AverageCostforPath==min(AverageCostforPath))
+  #We now choose one at random
+  ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
+  OverallBestPath=BestPathforStep[ChosenMin,]
   return(OverallBestPath[1])
 }
 

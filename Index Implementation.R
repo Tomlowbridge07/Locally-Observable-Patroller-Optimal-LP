@@ -40,16 +40,16 @@ Delta<-function(tilde=FALSE,CostAtNode,Lambda,b,x,v,vMax)
   if(tilde==FALSE)
   {
     #Calculate Sum
-    Sum=Lambda * R * (B+1)
+    Sum=Lambda * R * B
 
-    Sum=Sum+ v * (B+1-TruncPoissonHazard(Lambda,b,v))
+    Sum=Sum + (v * (B+1-TruncPoissonHazard(Lambda,b,v)))
 
     if(v>0)
     {
-    for(i in 0:(v-1))
-    { 
-      Sum=Sum- i * TruncPoissonPMF(Lambda,b,i)
-    }
+     for(i in 0:(v-1))
+     { 
+       Sum=Sum- (i * TruncPoissonPMF(Lambda,b,i))
+     }
     }
     Sum=CostAtNode * Sum
     print("This is delta")
@@ -59,12 +59,12 @@ Delta<-function(tilde=FALSE,CostAtNode,Lambda,b,x,v,vMax)
   if(tilde==TRUE)
   {
     #Now calculate sum
-    Sum= Lambda * (B+1 - R * TruncPoissonHazard(Lambda,b,vMax))
+    Sum= Lambda * (B + 1 - R + (R-1)*TruncPoissionCDF(Lambda,b,vMax))
     if(vMax>0)
     {
     for(i in 0:(vMax-1))
     {
-      Sum=Sum- i * TruncPoissonPMF(Lambda,b,i)
+      Sum=Sum- (i * TruncPoissonPMF(Lambda,b,i))
     }
     }
     Sum=CostAtNode * Sum
@@ -77,13 +77,17 @@ PlainIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   #First calculate B 
   B=ceiling(x)
   
-  if(s < B-1)
+  if(s < B)
   {
     return(0)
   }
-  else if(s==B-1 && v < vMax)
+  else if(s==B && v < vMax)
   {
     return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax))
+  }
+  else if(s==B && v >= vMax)
+  {
+    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax))
   }
   else
   {
@@ -97,15 +101,15 @@ EqualStepIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   B=ceiling(x)
   
   
-  if(s <= B-1 && v < vMax)
+  if(s <= B && v < vMax)
   {
     
-    return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax)*(s/(B-1)))
+    return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax)*(s/B))
   }
-  else if(s <= B-1 && v >=vMax)
+  else if(s <= B && v >=vMax)
   {
     
-    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax)*(s/(B-1)))
+    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax)*(s/B))
   }
   else
   {
