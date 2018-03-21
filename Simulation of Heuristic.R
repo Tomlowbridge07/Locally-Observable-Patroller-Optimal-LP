@@ -8,6 +8,7 @@ SimulateVStateEvolution<-function(NodeToEvolve,NewsVec,vVec,xVec,LambdaVec,bVec)
   BVec=ceiling(xVec)
   NewvVec=(NewVState(vVec,NewsVec,NodeToEvolve,BVec,bVec,LambdaVec)$State)[1,]
   NewvVec[NodeToEvolve]=min(bVec[NodeToEvolve],rpois(1,LambdaVec[NodeToEvolve]))
+  # NewvVec=NewMeanVState(vVec,NewsVec,NodeToEvolve,BVec,bVec,LambdaVec)
   return(NewvVec)
 }
 

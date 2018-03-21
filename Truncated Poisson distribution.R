@@ -3,7 +3,7 @@ TruncPoissonPMF<-function(lambda,b,i)
 {
   if(i > b)
   {
-    print("Error")
+    return(0)
   }
   else if(i==0 && b==0)
   {

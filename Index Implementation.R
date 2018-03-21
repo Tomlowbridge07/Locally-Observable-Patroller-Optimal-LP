@@ -7,7 +7,7 @@ FindVMax<-function(Lambda,b,x)
   R=B-x
   
   CurrentMax=-1
-  for(v in 0:(b+1))
+  for(v in 0:b)
   {
     if(v <= (Lambda * (1-R)))
     {
@@ -52,20 +52,15 @@ Delta<-function(tilde=FALSE,CostAtNode,Lambda,b,x,v,vMax)
      }
     }
     Sum=CostAtNode * Sum
-    print("This is delta")
-    print(Sum)
     return (Sum)
   }
   if(tilde==TRUE)
   {
     #Now calculate sum
-    Sum= Lambda * (B + 1 - R + (R-1)*TruncPoissionCDF(Lambda,b,vMax))
-    if(vMax>0)
-    {
-    for(i in 0:(vMax-1))
+    Sum= Lambda * (B + 1 - R + (R-1)*TruncPoissonHazard(Lambda,b,vMax+1))
+    for(i in 0:vMax)
     {
       Sum=Sum- (i * TruncPoissonPMF(Lambda,b,i))
-    }
     }
     Sum=CostAtNode * Sum
     return(Sum)
@@ -81,13 +76,13 @@ PlainIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   {
     return(0)
   }
-  else if(s==B && v < vMax)
+  else if(s==B && v <= vMax)
   {
     return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax))
   }
-  else if(s==B && v >= vMax)
+  else if(s==B && v >= (vMax+1))
   {
-    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax))
+    return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax))
   }
   else
   {
@@ -101,19 +96,16 @@ EqualStepIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   B=ceiling(x)
   
   
-  if(s <= B && v < vMax)
+  if(s <= B && v <= vMax)
   {
-    
     return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax)*(s/B))
   }
-  else if(s <= B && v >=vMax)
+  else if(s <= B && v >=(vMax+1))
   {
-    
-    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax)*(s/B))
+    return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax)*(s/B))
   }
   else
   {
-   
     return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax))
   }
 }
@@ -123,11 +115,11 @@ IncreasingStepIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   #First calculate B 
   B=ceiling(x)
   
-  if(s <= B && v < vMax)
+  if(s <= B && v <= vMax)
   {
     return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax)/(B+1-s))
   }
-  else if(s <= B && v >=vMax)
+  else if(s <= B && v >= (vMax+1))
   {
     return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax)/(B+1-s))
   }
@@ -162,13 +154,12 @@ IndicesForNodes<-function(n,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVe
     vMaxVec=CreateVMaxVector(n,LambdaVec,bVec,xVec)
   }
   
-  
   #Now for each node we find its index
   Indices=vector(length=n)
   for(i in 1:n)
   { 
     Indices[i]=IndexForNodeFunction(sVec[i],vVec[i],CostVec[i],LambdaVec[i],bVec[i],xVec[i],vMaxVec[i])
-    print(Indices[i])
+    #print(Indices[i])
   }
   
   return(Indices)

@@ -455,6 +455,7 @@ CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaV
   stopifnot(length(StateVector)==2*n)
   
   BVec=ceiling(xVec)
+  RVec=BVec-xVec
   
   if(StateVector[Node]<BVec[Node])
   {
@@ -476,7 +477,7 @@ CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaV
     }
     else
     {
-      return(CostVec[Node] * (LambdaVec[Node] * (BVec[Node]-xVec[Node]) + StateVector[n+Node]))
+      return(CostVec[Node] * (LambdaVec[Node] * (RVec[Node]) + StateVector[n+Node]))
     }
   }
   else if(StateVector[Node]==BVec[Node]+1)

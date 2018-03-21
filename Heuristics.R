@@ -123,18 +123,18 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
 
         }
       }
-      print(paste("I am about to compare all paths of length ",toString(Step)))
-      print(Paths)
-      print("They have a benefit of")
-      print(BenefitForPath)
+      # print(paste("I am about to compare all paths of length ",toString(Step)))
+      # print(Paths)
+      # print("They have a benefit of")
+      # print(BenefitForPath)
       #Identify the maximal elements
       MaximalElements=which(BenefitForPath==max(BenefitForPath))
       #We now choose one at random
       ChosenMax=MaximalElements[sample(1:length(MaximalElements),1)]
       BestPath=Paths[ChosenMax,]
       BestPathforStep[Step,]=BestPath
-      print("I have chosen the path")
-      print(BestPath)
+      # print("I have chosen the path")
+      # print(BestPath)
     }
     else
     {
@@ -174,20 +174,20 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
         }
         
       }
-      print(paste("I am about to compare all paths of length ",toString(Step)))
-      print(Paths)
-      print("They have a benefit of")
-      print(BenefitForPath)
+      # print(paste("I am about to compare all paths of length ",toString(Step)))
+      # print(Paths)
+      # print("They have a benefit of")
+      # print(BenefitForPath)
       #Identify the maximal elements
       MaximalElements=which(BenefitForPath==max(BenefitForPath))
-      print("Printing maximal elements")
-      print(MaximalElements)
+      # print("Printing maximal elements")
+      # print(MaximalElements)
       #We now choose one at random
       ChosenMax=MaximalElements[sample(1:length(MaximalElements),1)]
       BestPath=Paths[ChosenMax,]
       BestPathforStep[Step,]=BestPath
-      print("I have chosen the path")
-      print(BestPath)
+      # print("I have chosen the path")
+      # print(BestPath)
 
     }
     
@@ -203,9 +203,9 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
     #We use determinsitic evolution to the mean state in v
     AverageCostforPath[i]=DeterministicCostEvaluationOfPath(BestPathforStep[i,],n,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)$Average
   }
-  print("about to print paths and determinisitic cost of paths")
-  print(BestPathforStep)
-  print(AverageCostforPath)
+  # print("about to print paths and determinisitic cost of paths")
+  # print(BestPathforStep)
+  # print(AverageCostforPath)
   #Identify the maximal elements
   MinimalElements=which(AverageCostforPath==min(AverageCostforPath))
   #We now choose one at random
