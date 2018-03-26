@@ -39,6 +39,10 @@ Delta<-function(tilde=FALSE,CostAtNode,Lambda,b,x,v,vMax)
   
   if(tilde==FALSE)
   {
+    if(v==-1)
+    {
+      return(0)
+    }
     #Calculate Sum
     Sum=Lambda * R * B
 
@@ -71,22 +75,37 @@ PlainIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
 {
   #First calculate B 
   B=ceiling(x)
+
+  
+ stopifnot(s <= (B+1))
+ stopifnot(v <= (b+1))
+ # print(s)
+ # print(v)
+ # print(vMax)
   
   if(s < B)
   {
     return(0)
   }
-  else if(s==B && v <= vMax)
+  else if(s==B && v < (vMax+1))
   {
     return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax))
   }
   else if(s==B && v >= (vMax+1))
   {
-    return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax))
+    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax))
+  }
+  else if(s==(B+1) && v < (vMax))
+  {
+    return(Delta(tilde = FALSE,Cost,Lambda,b,x,v+1,vMax))
+  }
+  else if(s==(B+1) && v >= (vMax))
+  {
+    return(Cost * Lambda * B)
   }
   else
   {
-    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax))
+    print("Error")
   }
 }
 
@@ -94,19 +113,27 @@ EqualStepIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
 {
   #First calculate B 
   B=ceiling(x)
+
   
-  
-  if(s <= B && v <= vMax)
+  if(s <= B && v < (vMax+1))
   {
     return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax)*(s/B))
   }
   else if(s <= B && v >=(vMax+1))
   {
-    return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax)*(s/B))
+    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax)*(s/B))
+  }
+  else if(s==(B+1) && v < vMax)
+  {
+    return(Delta(tilde = FALSE,Cost,Lambda,b,x,v+1,vMax))
+  }
+  else if(s==(B+1) && v >= vMax)
+  {
+    return(Cost * Lambda * B)
   }
   else
   {
-    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax))
+    print("Error")
   }
 }
 
@@ -164,3 +191,9 @@ IndicesForNodes<-function(n,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVe
   
   return(Indices)
 }
+
+# #This function creates a matrix of s on row and v on column for a particular node
+# CreateIndexTable<-function(IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
+# {
+# 
+# }

@@ -346,17 +346,18 @@ StartingNodeHeuristic<-function(n,IndexForNodeFunction,CostVec,LambdaVec,bVec,xV
   }
   
   #Elapsed state, we will consider the indices when we have not visited in a very long time.
-  StartingSVec=ceiling(bVec)+1
+  StartingSVec=ceiling(xVec)+1
   #and we will assume that all v's are in their mean state.
   StartingVVec=vector(length=n)
   for(i in 1:n)
   {
-    StartingVVec[i]=TruncPoissionMean(LambdaVec[i],bVec[i])
+    # StartingVVec[i]=TruncPoissionMean(LambdaVec[i],bVec[i])
+    StartingVVec[i]=0
   }
-  
+
   #To decide a starting node we work out the index for all nodes (when S is maximum) and pick the biggest
   NodeIndexes=IndicesForNodes(n,IndexForNodeFunction,StartingSVec,StartingVVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)
-  
+  print("Here")
   BestStart=which.max(NodeIndexes)
   return(BestStart)
 }

@@ -3,17 +3,43 @@ library(stats)
 library(ggplot2)
 library(reshape2)
 
-SimulateVStateEvolution<-function(NodeToEvolve,NewsVec,vVec,xVec,LambdaVec,bVec)
+#This function returns a vector for the simulation to use
+CreateSimulationScenario<-function(NoSteps,n,LambdaVec)
 {
-  BVec=ceiling(xVec)
-  NewvVec=(NewVState(vVec,NewsVec,NodeToEvolve,BVec,bVec,LambdaVec)$State)[1,]
-  NewvVec[NodeToEvolve]=min(bVec[NodeToEvolve],rpois(1,LambdaVec[NodeToEvolve]))
-  # NewvVec=NewMeanVState(vVec,NewsVec,NodeToEvolve,BVec,bVec,LambdaVec)
-  return(NewvVec)
+  Scenario=matrix(0,nrow=n,ncol=NoSteps)
+  
+  for(i in 1:n)
+  {
+   for(j in 1:NoSteps)
+   {
+     Scenario[i,j]=rpois(1,LambdaVec[i])
+   }
+  }
+  return(Scenario)
 }
 
-SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
+# SimulateVStateEvolution<-function(NodeToEvolve,NewsVec,vVec,xVec,LambdaVec,bVec)
+# {
+#   BVec=ceiling(xVec)
+#   #NewvVec=(NewVState(vVec,NewsVec,NodeToEvolve,BVec,bVec,LambdaVec)$State)[1,]
+#   NewvVec=vVec
+#   NewvVec[NodeToEvolve]=min(bVec[NodeToEvolve],rpois(1,LambdaVec[NodeToEvolve]))
+#   # NewvVec=NewMeanVState(vVec,NewsVec,NodeToEvolve,BVec,bVec,LambdaVec)
+#   return(NewvVec)
+# }
+
+SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,SimulationScenario=NULL,vMaxVec=NULL)
 {
+  #Set up simulation matrix and tracking
+  if(is.null(SimulationScenario))
+  {
+    SimulationScenario=CreateSimulationScenario(NumberOfRunSteps,n,LambdaVec)
+  }
+  
+  #This vector tracks which column to currently use in each row
+  TrackingScenario=rep(1,n)
+  
+  
   BVec=ceiling(xVec)
   if(is.null(vMaxVec))
   {
@@ -43,7 +69,8 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
       {
         if(i==StartNode)
         {
-         vVec[i]=TruncPoissionMean(LambdaVec[i],bVec[i])
+         #vVec[i]=TruncPoissionMean(LambdaVec[i],bVec[i])
+         vVec[i]=0
          print(paste("I have just set the V to",toString(vVec[i]),"Using lam=",toString(LambdaVec[i])," and b=",toString(bVec[i])))
         }
         else
@@ -77,11 +104,15 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
       #Evolve System
       sVec=NewSState(OldsVec,MoveToNode,BVec)
       print("Evolved S is ")
-      print(sVec)
-      vVec=SimulateVStateEvolution(MoveToNode,sVec,OldvVec,xVec,LambdaVec,bVec)
+      #print(sVec)
+      
+      #Creating new vVec using scenario
+      vVec=OldvVec
+      vVec[MoveToNode]=min(SimulationScenario[MoveToNode,TrackingScenario[MoveToNode]],bVec[MoveToNode])
+      TrackingScenario[MoveToNode]=TrackingScenario[MoveToNode]+1
       #vVec=NewMeanVState(OldvVec,sVec,MoveToNode,BVec,bVec,LambdaVec)
       print("Evolved v is")
-      print(vVec)
+      #print(vVec)
       
       print(paste("Moved to ",toString(MoveToNode),"Costing ",toString(RunCost[run])))
     }
