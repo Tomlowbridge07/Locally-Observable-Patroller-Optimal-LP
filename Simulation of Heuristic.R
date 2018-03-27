@@ -103,7 +103,7 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
       
       #Evolve System
       sVec=NewSState(OldsVec,MoveToNode,BVec)
-      print("Evolved S is ")
+      #print("Evolved S is ")
       #print(sVec)
       
       #Creating new vVec using scenario
@@ -111,7 +111,7 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
       vVec[MoveToNode]=min(SimulationScenario[MoveToNode,TrackingScenario[MoveToNode]],bVec[MoveToNode])
       TrackingScenario[MoveToNode]=TrackingScenario[MoveToNode]+1
       #vVec=NewMeanVState(OldvVec,sVec,MoveToNode,BVec,bVec,LambdaVec)
-      print("Evolved v is")
+      #print("Evolved v is")
       #print(vVec)
       
       print(paste("Moved to ",toString(MoveToNode),"Costing ",toString(RunCost[run])))

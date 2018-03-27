@@ -93,7 +93,7 @@ PlainIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   }
   else if(s==B && v >= (vMax+1))
   {
-    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax))
+    return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax))
   }
   else if(s==(B+1) && v < (vMax))
   {
@@ -101,7 +101,7 @@ PlainIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   }
   else if(s==(B+1) && v >= (vMax))
   {
-    return(Cost * Lambda * B)
+    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v+1,vMax))
   }
   else
   {
@@ -121,7 +121,7 @@ EqualStepIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   }
   else if(s <= B && v >=(vMax+1))
   {
-    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax)*(s/B))
+    return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax)*(s/B))
   }
   else if(s==(B+1) && v < vMax)
   {
@@ -129,7 +129,7 @@ EqualStepIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   }
   else if(s==(B+1) && v >= vMax)
   {
-    return(Cost * Lambda * B)
+    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v+1,vMax))
   }
   else
   {

@@ -80,6 +80,7 @@ DeterministicCostEvaluationOfPath<-function(Path,n,sVec,vVec,CostVec,LambdaVec,b
 #Here we sum the indices up over the number of steps for all paths of the Number of steps
 MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
 {
+  print("Heuristic is Run")
   if(is.null(vMaxVec))
   {
     #Create vMaxVec
@@ -107,7 +108,7 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
       
 
       NodeIndexes=IndicesForNodes(n,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)
-      print(NodeIndexes)
+      #print(NodeIndexes)
       
       BenefitForAction=Actions * NodeIndexes
       
@@ -124,9 +125,9 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
         }
       }
       # print(paste("I am about to compare all paths of length ",toString(Step)))
-      # print(Paths)
+       print(Paths)
       # print("They have a benefit of")
-      # print(BenefitForPath)
+       print(BenefitForPath)
       #Identify the maximal elements
       MaximalElements=which(BenefitForPath==max(BenefitForPath))
       #We now choose one at random
@@ -175,9 +176,9 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
         
       }
       # print(paste("I am about to compare all paths of length ",toString(Step)))
-      # print(Paths)
+       print(Paths)
       # print("They have a benefit of")
-      # print(BenefitForPath)
+       print(BenefitForPath)
       #Identify the maximal elements
       MaximalElements=which(BenefitForPath==max(BenefitForPath))
       # print("Printing maximal elements")
@@ -204,8 +205,8 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
     AverageCostforPath[i]=DeterministicCostEvaluationOfPath(BestPathforStep[i,],n,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)$Average
   }
   # print("about to print paths and determinisitic cost of paths")
-  # print(BestPathforStep)
-  # print(AverageCostforPath)
+   print(BestPathforStep)
+   print(AverageCostforPath)
   #Identify the maximal elements
   MinimalElements=which(AverageCostforPath==min(AverageCostforPath))
   #We now choose one at random
@@ -214,7 +215,143 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
   return(OverallBestPath[1])
 }
 
-
+#This is an alternative to the benefit heuristic that looks at the indexs that are not in a given cycle
+MultiStepBenefitHeuristicAlternative<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
+{
+  print("Heuristic is Run")
+  if(is.null(vMaxVec))
+  {
+    #Create vMaxVec
+    vMaxVec=CreateVMaxVector(n,LambdaVec,bVec,xVec)
+  }
+  
+  BVec=ceiling(xVec)
+  
+  
+  Paths=matrix(0,nrow=0,ncol=NoSteps)
+  #Note. We will be using mean v Evolution for use with the index
+  EvolvedStates=matrix(0,nrow=0,ncol=2*n)
+  BenefitForPath=vector(length=0)
+  BestPathforStep=matrix(0,nrow=NoSteps,ncol=NoSteps)
+  
+  for(Step in 1:NoSteps)
+  {
+    if(Step==1)
+    {
+      #We run the initial set up
+      CurrentNode=which.min(sVec)
+      
+      #Actions
+      Actions=AdjacencyMatrix[CurrentNode,]
+      
+      
+      NodeIndexes=IndicesForNodes(n,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)
+      #print(NodeIndexes)
+      
+      BenefitForAction=Actions * NodeIndexes
+      
+      #Form Paths
+      for(action in 1:n)
+      {
+        if(Actions[action]==1)
+        {
+          Paths=rbind(Paths,c(action,rep(0,NoSteps-1)))
+          NewsVec=NewSState(sVec,action,BVec)
+          EvolvedStates=rbind(EvolvedStates,c(NewsVec,NewMeanVState(vVec,NewsVec,action,BVec,bVec,LambdaVec)))
+          BenefitForPath=c(BenefitForPath,BenefitForAction[action])
+          
+        }
+      }
+      # print(paste("I am about to compare all paths of length ",toString(Step)))
+      print(Paths)
+      # print("They have a benefit of")
+      print(BenefitForPath)
+      #Identify the maximal elements
+      MaximalElements=which(BenefitForPath==max(BenefitForPath))
+      #We now choose one at random
+      ChosenMax=MaximalElements[sample(1:length(MaximalElements),1)]
+      BestPath=Paths[ChosenMax,]
+      BestPathforStep[Step,]=BestPath
+      # print("I have chosen the path")
+      # print(BestPath)
+    }
+    else
+    {
+      
+      #We need to copy and expand each
+      OldPaths=Paths
+      OldEvolvedStates=EvolvedStates
+      OldBenefitForPath=BenefitForPath
+      
+      Paths=matrix(0,nrow=0,ncol=NoSteps)
+      EvolvedStates=matrix(0,nrow=0,ncol=2*n)
+      BenefitForPath=vector(length=0)
+      
+      #We now look at expanding each
+      for(row in 1:nrow(OldPaths))
+      {
+        #for each row we expand it to allow all possible actions
+        Actions=AdjacencyMatrix[OldPaths[row,Step-1],]
+        
+        
+        NodeIndexes=IndicesForNodes(n,IndexForNodeFunction,OldEvolvedStates[row,1:n],OldEvolvedStates[row,(n+1):(2*n)],CostVec,LambdaVec,bVec,xVec,vMaxVec)
+        
+        
+        BenefitForAction=Actions * NodeIndexes
+        
+        
+        #Form Paths
+        for(action in 1:n)
+        {
+          if(Actions[action]==1)
+          {
+            Paths=rbind(Paths,c(OldPaths[row,1:(Step-1)],action,rep(0,NoSteps-Step)))
+            NewsVec=NewSState(OldEvolvedStates[row,1:n],action,BVec)
+            EvolvedStates=rbind(EvolvedStates,c(NewsVec,NewMeanVState(OldEvolvedStates[row,(n+1):(2*n)],NewsVec,action,BVec,bVec,LambdaVec)))
+            BenefitForPath=c(BenefitForPath,OldBenefitForPath[row]+BenefitForAction[action])
+          }
+        }
+        
+      }
+      # print(paste("I am about to compare all paths of length ",toString(Step)))
+      print(Paths)
+      # print("They have a benefit of")
+      print(BenefitForPath)
+      #Identify the maximal elements
+      MaximalElements=which(BenefitForPath==max(BenefitForPath))
+      # print("Printing maximal elements")
+      # print(MaximalElements)
+      #We now choose one at random
+      ChosenMax=MaximalElements[sample(1:length(MaximalElements),1)]
+      BestPath=Paths[ChosenMax,]
+      BestPathforStep[Step,]=BestPath
+      # print("I have chosen the path")
+      # print(BestPath)
+      
+    }
+    
+  }
+  
+  #For each look ahead step we have a path
+  #print(BestPathforStep)
+  AverageCostforPath=vector(length=NoSteps)
+  #We now need to see how good they perform
+  for(i in 1:NoSteps)
+  {
+    #We compute the average cost of following such a strategy to decide which paths to pick
+    #We use determinsitic evolution to the mean state in v
+    AverageCostforPath[i]=DeterministicCostEvaluationOfPath(BestPathforStep[i,],n,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)$Average
+  }
+  # print("about to print paths and determinisitic cost of paths")
+  print(BestPathforStep)
+  print(AverageCostforPath)
+  #Identify the maximal elements
+  MinimalElements=which(AverageCostforPath==min(AverageCostforPath))
+  #We now choose one at random
+  ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
+  OverallBestPath=BestPathforStep[ChosenMin,]
+  return(OverallBestPath[1])
+}
 
 
 
