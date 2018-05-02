@@ -271,7 +271,7 @@ CreateSVStatesForConstantBb<-function(n,B,b)
      WorkingVState=VStates[Remainder,]
      for(j in 1:n)
      {
-       if(FullStateSpace[i,j]==B+1)
+       if(FullStateSpace[i,j]==(B+1))
        {
          WorkingVState[j]=0
        }
@@ -303,7 +303,7 @@ CreateSVStates<-function(n,BVec,bVec)
     WorkingVState=VStates[Remainder,]
     for(j in 1:n)
     {
-      if(FullStateSpace[i,j]==BVec[j]+1)
+      if(FullStateSpace[i,j]==(BVec[j]+1))
       {
         WorkingVState[j]=0
       }
@@ -375,7 +375,7 @@ NewSState<-function(CurrentSState,NodeMovedTo,BVec)
 }
 
 #Evolution of V States function
-#note. We need to know the current S state , as if one value is B+2, then v is set to 0
+#note. We need to know the current S state , as if one value is B+1, then v is set to 0
 NewVState<-function(CurrentVState,NewSState,NodeMovedTo,BVec,bVec,lambdaVec)
 {
   #We aim to store the New V states and the probability of ending up in one.
@@ -477,7 +477,7 @@ CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaV
     }
     else
     {
-      return(CostVec[Node] * (LambdaVec[Node] * (RVec[Node]) + StateVector[n+Node]))
+      return(CostVec[Node] * ((LambdaVec[Node] * RVec[Node]) + StateVector[n+Node]))
     }
   }
   else if(StateVector[Node]==BVec[Node]+1)
@@ -518,6 +518,59 @@ CostOfAction<-function(StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)
 
   return(Sum)
 }
+
+SeperatedCostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)
+{
+  stopifnot(length(StateVector)==2*n)
+  
+  BVec=ceiling(xVec)
+  RVec=BVec-xVec
+  
+  if(StateVector[Node]<BVec[Node])
+  {
+    return(list(CostDueToArrivals=0,CostDueToObserved=0))
+  }
+  else if(StateVector[Node]==BVec[Node])
+  {
+    if(NodeMovedTo==Node)
+    {
+      return(list(CostDueToArrivals=0,CostDueToObserved=0))
+    }
+    else
+    {
+      return(list(CostDueToArrivals=CostVec[Node] * LambdaVec[Node] * RVec[Node],CostDueToObserved=CostVec[Node] *StateVector[n+Node]))
+    }
+  }
+  else if(StateVector[Node]==BVec[Node]+1)
+  {
+    if(NodeMovedTo==Node)
+    {
+      return(list(CostDueToArrivals=0,CostDueToObserved=0))
+    }
+    else
+    {
+      return(list(CostDueToArrivals=CostVec[Node] * LambdaVec[Node],CostDueToObserved=0))
+    }
+  }
+  else
+  {
+    print("An error has occured in the cost of a node function")
+  }
+}
+ 
+SeperatedCostOfAction<-function(StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)
+{
+  SumDueToArrivals=0
+  SumDueToObserved=0
+  for(j in 1:n)
+  {
+    SumDueToArrivals=SumDueToArrivals+SeperatedCostOfActionOnNode(j,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)$CostDueToArrivals
+    SumDueToObserved=SumDueToObserved+SeperatedCostOfActionOnNode(j,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)$CostDueToObserved
+  }
+  
+  return(list(CostDueToArrivals=SumDueToArrivals,CostDueToObserved=SumDueToObserved))
+}  
+  
   
 #create for a state the constraint matrix parts for a particular state
 CreateConstraintMatrixForState<-function(StateVector,AdjMatrix,n,xVec,bVec,CostVec,LambdaVec,SVStateSpace=NULL)
@@ -581,6 +634,7 @@ CreateConstraintMatrixForState<-function(StateVector,AdjMatrix,n,xVec,bVec,CostV
    ALHS=rbind(ALHS,ConstraintRow)
    bRHS=c(bRHS,CostOfAction(StateVector,NodeToMoveTo,n,CostVec,xVec,LambdaVec))
   }
+  
   return(list(LHS=ALHS,RHS=bRHS))
 }
 
@@ -609,7 +663,7 @@ CreateConstraintMatrix<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
     Fullbounds=c(Fullbounds,CreateConstraintMatrixForState(SVStateSpace[i,],AdjMatrix,n,xVec,bVec,CostVec,LambdaVec,SVStateSpace)$RHS)
     
   }
-  return(list(MatrixConstraints=FullConstraintMatrix,VectorBounds=Fullbounds))
+  return(list(MatrixConstraints=FullConstraintMatrix,VectorBounds=Fullbounds,SVStateSpace=SVStateSpace))
 }
 
 SolveLP<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
@@ -631,3 +685,99 @@ SolveLP<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
   return(list(Value=Solved ,Solution=Solved$solution))
 }
 
+ActiveConstraints<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
+{
+  #Retrive the solution to the LP, Solve for the solution
+  
+  CreatedAb=CreateConstraintMatrix(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
+  A=CreatedAb$MatrixConstraints
+  b=CreatedAb$VectorBounds
+  SVStateSpace=CreatedAb$SVStateSpace
+  
+  print(A)
+  print(b)
+  
+  Objdir="max"
+  Objective=c(1,rep(0,(ncol(A)-1)))
+  Constdir=rep("<=",nrow(A))
+  
+  
+  print("Starting to solve")
+  Solved=lp(Objdir,Objective,A,Constdir,b)
+  Solution=Solved$solution
+  print("Solution is")
+  print(Solution)
+  
+  #Create the solutions b values
+  Solutionsb=as.vector(A %*% Solution)
+  
+  print("calculated solution")
+  print(Solutionsb)
+  print("b")
+  print(b)
+  
+  #Compare values to see which b are active
+  ActiveConstraints=vector(length=0)
+  StateBestAction=matrix(data=list(),nrow=nrow(SVStateSpace),ncol=2)
+  # counter=1
+  # for(i in 1:length(b))
+  # {
+  #   if(abs(Solutionsb[i]-b[i])<0.001)
+  #   {
+  #     print(paste("An active constraint exists at constraint",toString(i)))
+  #     #We record that the constraint is active
+  #     ActiveConstraints=c(ActiveConstraints,i)
+  #     #We want to find the corresponding state and action for this active constraint
+  #     #Note. Each state has n actions available, so we use blocksize n to get the state
+  #     ActionIndex=i %% n
+  #     if(ActionIndex==0)
+  #     {
+  #       Action=n
+  #     }
+  #     else
+  #     {
+  #       Action=ActionIndex
+  #     }
+  #     
+  #     StateBlock=1+(i-Action)/n
+  #     State=SVStateSpace[StateBlock,]
+  #     print(State)
+  #     
+  #     #Store the state and action in the data frame
+  #     StateBestAction[[counter,1]]=toString(State)
+  #     StateBestAction[[counter,2]]=Action
+  #     counter=counter+1
+  #   }
+  # }
+  
+  #for each state block we will look at which actions make the constraints active
+  counter=1
+  for(statenumber in 1:nrow(SVStateSpace))
+  {
+    #First from statenumber we need to identify the current node (for actions)
+    CurrentState=SVStateSpace[statenumber,]
+    CurrentNode=min(CurrentState[1:n])
+    StateBestAction[[statenumber,1]]=CurrentState
+    #For each possible action see if the constraint is active and record if so
+    ActionsActive=vector(length=0)
+    for(action in 1:ncol(AdjMatrix))
+    {
+      
+      if(AdjMatrix[CurrentNode,action]==1)
+      {
+        #Now check if this action constraint is active
+        if(abs(Solutionsb[counter]-b[counter])<0.001)
+        {
+          ActionsActive=c(ActionsActive,action)
+        }
+        #Increment the counter if we checked to see if it was active or not
+        counter=counter+1
+      }
+    }
+    StateBestAction[[statenumber,2]]=ActionsActive
+    
+  }
+
+  print(SVStateSpace)
+  return(StateBestAction)
+}

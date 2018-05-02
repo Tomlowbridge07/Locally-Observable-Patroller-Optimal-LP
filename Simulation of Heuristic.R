@@ -48,6 +48,9 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
   }
   
   RunCost=vector(length=NumberOfRunSteps)
+  SeperatedRunCost=matrix(0,nrow=NumberOfRunSteps,ncol=2)
+  CumulativeSeperatedRunCost=matrix(0,nrow=NumberOfRunSteps,ncol=2)
+  AllInfo=matrix(list(),nrow=NumberOfRunSteps,ncol=4) #All info stores; state, decision , cost from arrival , cost from observed
   
   for(run in 0:NumberOfRunSteps)
   {
@@ -99,6 +102,20 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
       
       #Calculate cost of doing such an action
       RunCost[run]=CostOfAction(c(OldsVec,OldvVec),MoveToNode,n,CostVec,xVec,LambdaVec)
+      SeperatedRunCost[run,1]=SeperatedCostOfAction(c(OldsVec,OldvVec),MoveToNode,n,CostVec,xVec,LambdaVec)$CostDueToArrivals
+      SeperatedRunCost[run,2]=SeperatedCostOfAction(c(OldsVec,OldvVec),MoveToNode,n,CostVec,xVec,LambdaVec)$CostDueToObserved
+      if(run==1)
+      {
+        CumulativeSeperatedRunCost[run,1]=SeperatedRunCost[run,1]
+        CumulativeSeperatedRunCost[run,2]=SeperatedRunCost[run,2]        
+      }
+      else
+      {
+        CumulativeSeperatedRunCost[run,1]=CumulativeSeperatedRunCost[run-1,1]+SeperatedRunCost[run,1]
+        CumulativeSeperatedRunCost[run,2]=CumulativeSeperatedRunCost[run-1,2]+SeperatedRunCost[run,2]
+      }
+      
+      
       print(paste("Cost of action is",toString(RunCost[run])))
       
       #Evolve System
@@ -114,14 +131,61 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
       #print("Evolved v is")
       #print(vVec)
       
+      AllInfo[[run,1]]=c(sVec,vVec)
+      AllInfo[[run,2]]=MoveToNode
+      AllInfo[[run,3]]=SeperatedRunCost[run,1]
+      AllInfo[[run,4]]=SeperatedRunCost[run,2]
+      
       print(paste("Moved to ",toString(MoveToNode),"Costing ",toString(RunCost[run])))
     }
     
   }
   AverageCost=sum(RunCost)/NumberOfRunSteps
   print(paste("Average cost is ",toString(AverageCost)))
-  return(list(Average=AverageCost,CostForStep=RunCost))
+  return(list(Average=AverageCost,CostForStep=RunCost,SeperatedCostForStep=SeperatedRunCost,CumulativeSeperatedCostForStep=CumulativeSeperatedRunCost,FullInfoMatrix=AllInfo))
 }
+
+#This function is desinged to take in the FullInfoMatrix and compare its decisions to actions from some policy
+CompareSimulationInfoToPolicy<-function(FullInfo,ActionPolicy,StateSpace,BVec)
+{
+  AgreeAtStep=vector(length=nrow(FullInfo))
+  for(i in 1:nrow(FullInfo))
+  {
+    #For each step we now compare the decision to the policy
+    CurrentState=FullInfo[[i,1]]
+    Decision=FullInfo[[i,2]]
+    l=length(CurrentState)
+    n=l/2
+    #Note here we retain the information for the observed when in state B+1, we will now remove this
+    for(i in 1:n)
+    {
+      if(CurrentState[i]==(BVec[i]+1))
+      {
+        CurrentState[i+n]=0
+      }
+    }
+    
+    CurrentStateID=IdenityRow(CurrentState,StateSpace)
+    PolicyDecision=ActionPolicy[CurrentStateID]
+    
+    print(paste("Our Decision at state ",toString(CurrentState)))
+    print(paste("Proposed by simulation is: ",toString(Decision)," and policy suggests: ",toString(PolicyDecision)))
+    
+    if(Decision==PolicyDecision)
+    {
+      AgreeAtStep[i]=1
+    }
+    else
+    {
+      AgreeAtStep[i]=0
+    }
+    
+  }
+  return(AgreeAtStep)
+}
+
+
+
 
 SimulationExperiment<-function(NumberOfTrials,NumberOfRunSteps,HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
 {

@@ -2,24 +2,30 @@ source("Optimal solution by LP.R")
 
 #Function to work out the value for a particular number of steps
 #Expects states to be passed as a matrix (with rows being a state with s_1 , s_2,...,s_n,v_1,...,v_2)
-ValueFunction<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,PriorValueFunction=NULL)
+ValueFunction<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,PriorValueFunction=NULL,PriorActionsMatrix=NULL)
 {
   StateSpaceSize=nrow(StateSpace)
   n=nrow(AdjacencyMatrix)
   BVec=ceiling(xVec)
   
+  #Stores the value of this iteration
   ValueVector=rep(0,StateSpaceSize)
+  
+  #Store a list of actions for this iteration
+  AddOnActionsMatrix=matrix(list(),nrow=1,ncol=StateSpaceSize)
   
   if(Steps==0) #Base case
   {
-    return(ValueVector)
+    return(list(Values=ValueVector,Actions=AddOnActionsMatrix))
   }
   else if(Steps!=0) 
   {
     #Work out previous step
-    if(is.null(PriorValueFunction))
+    if(is.null(PriorValueFunction) || is.null(PriorActionsMatrix))
     {
-      PriorValueFunction=ValueFunction(Steps-1,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
+      Prior=ValueFunction(Steps-1,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
+      PriorValueFunction=Prior$Values
+      PriorActionsMatrix=Prior$Actions
     }
     
     
@@ -74,23 +80,31 @@ ValueFunction<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,Lambd
       
       #Set the Value Vector for that state 
       ValueVector[state]=min(OptionsVector)
+      #We will also store the action used to achieve this.
+      AddOnActionsMatrix[[1,state]]=which(OptionsVector==ValueVector[state])
     }
+    ActionsMatrix=rbind(PriorActionsMatrix,AddOnActionsMatrix)
+
   }
   
   #Return all values
-  return(ValueVector)
+  return(list(Values=ValueVector,Actions=ActionsMatrix))
 }
 
 ValueIteration<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
 {
   step=1
   BoundWidthError=Tolerance+1
-  PriorValueFunction=ValueFunction(0,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
+  PriorValueFunction=ValueFunction(0,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)$Values
+  PriorActionsMatrix=ValueFunction(0,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)$Actions
   while(step<=MaxNoSteps && BoundWidthError>=Tolerance)
   {
     print(paste("On Step ",toString(step)))
+    
     #Work out the value vector for this number of steps
-    NewValueFunction=ValueFunction(step,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,PriorValueFunction)
+    New=ValueFunction(step,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,PriorValueFunction,PriorActionsMatrix)
+    NewValueFunction=New$Values
+    NewActionsMatrix=New$Actions
 
     
     #For this state calcluate min and max for all states
@@ -103,19 +117,42 @@ ValueIteration<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bV
     step=step+1
     
     PriorValueFunction=NewValueFunction
+    PriorActionsMatrix=NewActionsMatrix
     
     print(MinForStates)
     print(MaxForStates)
   }
+  #We need to remove the top row of the NewActionsMatrix
+  
+  TrueActionsMatrix=NewActionsMatrix[-1,]
+  
   if(BoundWidthError<Tolerance)
   {
     print("Returning due to tolerance reached")
-    return(list(LowerBound=MinForStates,UpperBound=MaxForStates))
+    return(list(LowerBound=MinForStates,UpperBound=MaxForStates,Actions=TrueActionsMatrix))
   }
   else
   {
     print("Returning due to time out")
-    return(list(LowerBound=MinForStates,UpperBound=MaxForStates))
+    return(list(LowerBound=MinForStates,UpperBound=MaxForStates,Actions=TrueActionsMatrix))
   }
+}
+
+ValueIterationForGame<-function(MaxNoSteps,Tolerance,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
+{
+  #Set up games statespace
+  BVec=ceiling(xVec)
+  n=nrow(AdjacencyMatrix)
+  StateSpace=CreateSVStates(n,BVec,bVec)
   
+  #Solve the iteration
+  ValueIt=ValueIteration(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
+  LowerBound=ValueIt$LowerBound
+  UpperBound=ValueIt$UpperBound
+  ActionsMatrix=ValueIt$Actions
+  
+  #This is assumed to be the actions to be performed in the limit (Theoretical justification may be needed)
+  EndActions=ActionsMatrix[nrow(ActionsMatrix),]
+
+ return(list(LowerBound=LowerBound,UpperBound=UpperBound,Actions=ActionsMatrix,EndActions=EndActions))
 }
