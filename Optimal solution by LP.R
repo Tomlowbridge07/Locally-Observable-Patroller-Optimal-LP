@@ -781,3 +781,204 @@ ActiveConstraints<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
   print(SVStateSpace)
   return(StateBestAction)
 }
+
+#We solve the LP , then insert the value for g and then solve to maximize the sum of the h's
+ActiveConstraintsExperimental<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
+{
+  #Retrive the solution to the LP, Solve for the solution
+  
+  CreatedAb=CreateConstraintMatrix(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
+  A=CreatedAb$MatrixConstraints
+  b=CreatedAb$VectorBounds
+  SVStateSpace=CreatedAb$SVStateSpace
+  
+  print(A)
+  print(b)
+  
+  Objdir="max"
+  Objective=c(1,rep(0,(ncol(A)-1)))
+  Constdir=rep("<=",nrow(A))
+  
+  
+  print("Starting to solve")
+  Solved=lp(Objdir,Objective,A,Constdir,b)
+  InitialSolution=Solved$solution
+  print("Inital Solution is")
+  print(InitialSolution)
+  
+  #Create the solutions b values
+  Solutionsb=as.vector(A %*% InitialSolution)
+  
+  print("calculated solution")
+  print(Solutionsb)
+  print("b")
+  print(b)
+  
+  #Compare values to see which b are active
+  ActiveConstraints=vector(length=0)
+  StateBestAction=matrix(data=list(),nrow=nrow(SVStateSpace),ncol=2)
+  
+  #for each state block we will look at which actions make the constraints active
+  counter=1
+  NoActions=vector(length=0)
+  for(statenumber in 1:nrow(SVStateSpace))
+  {
+    #First from statenumber we need to identify the current node (for actions)
+    CurrentState=SVStateSpace[statenumber,]
+    CurrentNode=min(CurrentState[1:n])
+    StateBestAction[[statenumber,1]]=CurrentState
+    #For each possible action see if the constraint is active and record if so
+    ActionsActive=vector(length=0)
+    for(action in 1:ncol(AdjMatrix))
+    {
+      
+      if(AdjMatrix[CurrentNode,action]==1)
+      {
+        #Now check if this action constraint is active
+        if(abs(Solutionsb[counter]-b[counter])<0.001)
+        {
+          ActionsActive=c(ActionsActive,action)
+        }
+        #Increment the counter if we checked to see if it was active or not
+        counter=counter+1
+      }
+    }
+    if(length(ActionsActive)==0)
+    {
+      NoActions=c(NoActions,statenumber)
+    }
+    StateBestAction[[statenumber,2]]=ActionsActive
+    
+  }
+  print(StateBestAction)
+  
+  #We now seek to get Active constrains for the current states which are not assigned an action
+  HasActions=1:nrow(SVStateSpace)
+  HasActions=HasActions[-NoActions]
+  
+  #Now we extract g
+  g=InitialSolution[1]
+  
+  #Now we form an LP with this value in the constraints and try to maximize the sum of h's
+  NewA=A[,-1] #remove the first column of A to remove g
+  NumberofOriginalConstraints=nrow(NewA)
+  Newb=b-g #Subtract g from the LHS
+  for(i in HasActions)
+  {
+    #For each currently assigned value, we force the value to take the current solutions value
+    NewA=rbind(NewA,c(rep(0,i-1),1,rep(0,ncol(NewA)-i)))
+    Newb=c(Newb,InitialSolution[i+1])
+  }
+  
+  print("New A is")
+  print(NewA)
+
+  print("New b is")
+  print(Newb)
+  
+  NewObjdir="max"
+  NewObjective=rep(1,ncol(NewA))
+  #NewObjective=c(0,0,10000,rep(0,ncol(NewA)-3))
+  NewConstdir=c(rep("<=",NumberofOriginalConstraints),rep("=",length(HasActions)))
+  
+  print("Starting to solve new problem for h's")
+  HSolved=lp(NewObjdir,NewObjective,NewA,NewConstdir,Newb)
+  HSolution=HSolved$solution
+  print("Solution for h's is")
+  print(HSolution)
+  
+  #Now combine for full solution
+  Solution=c(g,HSolution)
+  
+  
+  
+  #Create the solutions b values
+  Solutionsb=as.vector(A %*% Solution)
+  
+  print("calculated solution")
+  print(Solutionsb)
+  print("b")
+  print(b)
+  
+  #Compare values to see which b are active
+  ActiveConstraints=vector(length=0)
+  StateBestAction=matrix(data=list(),nrow=nrow(SVStateSpace),ncol=2)
+  # counter=1
+  # for(i in 1:length(b))
+  # {
+  #   if(abs(Solutionsb[i]-b[i])<0.001)
+  #   {
+  #     print(paste("An active constraint exists at constraint",toString(i)))
+  #     #We record that the constraint is active
+  #     ActiveConstraints=c(ActiveConstraints,i)
+  #     #We want to find the corresponding state and action for this active constraint
+  #     #Note. Each state has n actions available, so we use blocksize n to get the state
+  #     ActionIndex=i %% n
+  #     if(ActionIndex==0)
+  #     {
+  #       Action=n
+  #     }
+  #     else
+  #     {
+  #       Action=ActionIndex
+  #     }
+  #     
+  #     StateBlock=1+(i-Action)/n
+  #     State=SVStateSpace[StateBlock,]
+  #     print(State)
+  #     
+  #     #Store the state and action in the data frame
+  #     StateBestAction[[counter,1]]=toString(State)
+  #     StateBestAction[[counter,2]]=Action
+  #     counter=counter+1
+  #   }
+  # }
+  
+  #for each state block we will look at which actions make the constraints active
+  counter=1
+  for(statenumber in 1:nrow(SVStateSpace))
+  {
+    #First from statenumber we need to identify the current node (for actions)
+    CurrentState=SVStateSpace[statenumber,]
+    CurrentNode=min(CurrentState[1:n])
+    StateBestAction[[statenumber,1]]=CurrentState
+    #For each possible action see if the constraint is active and record if so
+    ActionsActive=vector(length=0)
+    for(action in 1:ncol(AdjMatrix))
+    {
+      
+      if(AdjMatrix[CurrentNode,action]==1)
+      {
+        #Now check if this action constraint is active
+        if(abs(Solutionsb[counter]-b[counter])<0.001)
+        {
+          ActionsActive=c(ActionsActive,action)
+        }
+        #Increment the counter if we checked to see if it was active or not
+        counter=counter+1
+      }
+    }
+    StateBestAction[[statenumber,2]]=ActionsActive
+    
+  }
+  
+  #print(SVStateSpace)
+  return(StateBestAction)
+}
+
+#Function to compare two policies (note. Assumed in same order as SVStateSpace)
+ComparePolicies<-function(Policy1,Policy2)
+{
+  #We assume the Policies have the format of a vector of lists
+  AgreeAt=vector(length=length(Policy1))
+  for(i in 1:length(Policy1))
+  {
+    print(Policy1[i])
+    print(Policy2[i])
+    if(all.equal(Policy1[i],Policy2[i]))
+    {
+      AgreeAt[i]=1
+    }
+  }
+  return(AgreeAt)
+}
