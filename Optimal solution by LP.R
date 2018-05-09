@@ -583,7 +583,7 @@ CreateConstraintMatrixForState<-function(StateVector,AdjMatrix,n,xVec,bVec,CostV
   BVec=ceiling(xVec)
 
   #To find out out the list of nodes we can choose to move to we need to look which s_i=1 in our state
-  CurrentNode=min(StateVector[1:n]) #just look in the S state space
+  CurrentNode=which.min(StateVector[1:n]) #just look in the S state space
   CurrentNodeRow=AdjMatrix[CurrentNode,]
   
   #Now create a vector of nodes we can move to
@@ -965,6 +965,295 @@ ActiveConstraintsExperimental<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
   #print(SVStateSpace)
   return(StateBestAction)
 }
+
+
+#We Note our list of x,y are in the form of blocks; x->state->action
+CreateDualSetup<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec,SVStateSpace=NULL,AlphaVec=NULL)
+{
+  
+  BVec=ceiling(xVec)
+  if(is.null(SVStateSpace))
+  {
+    SVStateSpace=CreateSVStates(n,BVec,bVec)
+  }
+  if(is.null(AlphaVec))
+  {
+    AlphaVec=vector(length=nrow(SVStateSpace))
+    AlphaVec=rep(1/length(AlphaVec),length(AlphaVec))
+  }
+  
+  #We now work out the number of x's and y's needed (i.e the size of (s,a))
+  NumberOfXVariables=0
+  NumberOfActionsFromState=vector(length=0)
+  for(state in 1:nrow(SVStateSpace))
+  {
+    #For each state we need to work out the number of actions
+    #First we work out the current node (and then how many actions can be taken)
+    StateVector=SVStateSpace[state,]
+    CurrentNode=which.min(StateVector[1:n])
+    
+    AdjRow=AdjMatrix[CurrentNode,]
+  
+    NumberOfXVariables=NumberOfXVariables+length(AdjRow[AdjRow==1])
+    NumberOfActionsFromState=c(NumberOfActionsFromState,length(AdjRow[AdjRow==1]))
+  }
+  
+  NumberOfYVariables=NumberOfXVariables
+  NumberOfVariables=NumberOfXVariables+NumberOfYVariables
+  
+  
+  
+  #creating the LHS matrix part A
+  ALHS=matrix(nrow=0,ncol=NumberOfVariables)
+  
+  #storage for the RHS vector part b
+  bRHS=vector(length=0)
+  
+  #FIRST DUAL CONSTRAINT
+  for(StateNumber in 1:nrow(SVStateSpace))
+  {
+    
+    #We will now create the constraint for taking that action
+    ConstraintRow=vector(length=NumberOfVariables)
+    
+    #We store our state we are working on the constraint row for
+    State=SVStateSpace[StateNumber,]
+    CurrentNode=which.min(State[1:n])
+    CurrentNodeRow=AdjMatrix[CurrentNode,]
+    
+    #Actions available from this state
+    Actions=vector(length=0)
+    for(Node in 1:n)
+    {
+      if(CurrentNodeRow[Node]==1)
+      {
+        Actions=c(Actions,Node)
+      }
+    }  
+    
+    #We place 1's in the all the actions possible for this state x
+    for(i in 1:NumberOfActionsFromState[StateNumber])
+    {
+      if(StateNumber==1)
+      {
+        ConstraintRow[i]=ConstraintRow[i]+1
+      }
+      else
+      {
+        ConstraintRow[sum(NumberOfActionsFromState[1:(StateNumber-1)])+i]=
+          ConstraintRow[sum(NumberOfActionsFromState[1:(StateNumber-1)])+i]+1
+      }
+    }
+    
+    #We now subtract prob(moving to state summed over all states and actions) for x
+    for(oldstatenumber in 1:nrow(SVStateSpace))
+    {
+      OldState=SVStateSpace[oldstatenumber,]
+      OldNode=which.min(OldState[1:n])
+      OldNodeRow=AdjMatrix[CurrentNode,]
+      #Actions available from this state
+      OldActions=vector(length=0)
+      for(Node in 1:n)
+      {
+        if(OldNodeRow[Node]==1)
+        {
+          OldActions=c(OldActions,Node)
+        }
+      }  
+      for(actionnumber in 1:NumberOfActionsFromState[oldstatenumber])
+      {
+        #Using this oldstate and action , is it possible that the new state is the current working state
+        
+        New=NewSVState(OldState,OldActions[actionnumber],BVec,bVec,LambdaVec)
+        NewState=New$State
+        NewStateProb=New$Prob
+        
+        for(NewStateNumber in 1:nrow(NewState))
+        {
+          if(all(NewState[NewStateNumber,]==SVStateSpace[StateNumber,]))
+          {
+            #If we can possibly move to the state we are working on we subtract the probability
+            if(oldstatenumber==1)
+            {
+             ConstraintRow[actionnumber]=ConstraintRow[actionnumber]-NewStateProb[NewStateNumber]
+            }
+            else
+            {
+             ConstraintRow[sum(NumberOfActionsFromState[1:(oldstatenumber-1)])+actionnumber]=
+               ConstraintRow[sum(NumberOfActionsFromState[1:(oldstatenumber-1)])+actionnumber]-NewStateProb[NewStateNumber]
+            }
+          }
+        }
+        
+        
+        
+
+      }
+    }
+    
+    ALHS=rbind(ALHS,ConstraintRow)
+    bRHS=c(bRHS,0)
+  }
+  
+  #SECOND DUAL CONSTRAINT
+  for(StateNumber in 1:nrow(SVStateSpace))
+  {
+    #We will now create the constraint for taking that action
+    ConstraintRow=vector(length=NumberOfVariables)
+    
+    #We store our state we are working on the constraint row for
+    State=SVStateSpace[StateNumber,]
+    CurrentNode=which.min(State[1:n])
+    CurrentNodeRow=AdjMatrix[CurrentNode,]
+    
+    #Actions available from this state
+    Actions=vector(length=0)
+    for(Node in 1:n)
+    {
+      if(CurrentNodeRow[Node]==1)
+      {
+        Actions=c(Actions,Node)
+      }
+    }  
+    
+    #We place 1's in the all the actions possible for this state for x
+    for(i in 1:NumberOfActionsFromState[StateNumber])
+    {
+      if(StateNumber==1)
+      {
+        ConstraintRow[i]=ConstraintRow[i]+1
+      }
+      else
+      {
+        ConstraintRow[sum(NumberOfActionsFromState[1:(StateNumber-1)])+i]=
+          ConstraintRow[sum(NumberOfActionsFromState[1:(StateNumber-1)])+i]+1
+      }
+    }
+    
+    #We place 1's in the all the actions possible for this state for y
+    for(i in 1:NumberOfActionsFromState[StateNumber])
+    {
+      if(StateNumber==1)
+      {
+        ConstraintRow[NumberOfXVariables+i]=ConstraintRow[NumberOfXVariables+i]+1
+      }
+      else
+      {
+        ConstraintRow[NumberOfXVariables+sum(NumberOfActionsFromState[1:(StateNumber-1)])+i]=
+          ConstraintRow[NumberOfXVariables+sum(NumberOfActionsFromState[1:(StateNumber-1)])+i]+1
+      }
+    }
+    
+    #We now subtract prob(moving to state summed over all states and actions) for y
+    for(oldstatenumber in 1:nrow(SVStateSpace))
+    {
+      OldState=SVStateSpace[oldstatenumber,]
+      OldNode=which.min(OldState[1:n])
+      OldNodeRow=AdjMatrix[CurrentNode,]
+      #Actions available from this state
+      OldActions=vector(length=0)
+      for(Node in 1:n)
+      {
+        if(OldNodeRow[Node]==1)
+        {
+          OldActions=c(OldActions,Node)
+        }
+      }  
+      for(actionnumber in 1:NumberOfActionsFromState[oldstatenumber])
+      {
+        #Using this oldstate and action , is it possible that the new state is the current working state
+        
+        New=NewSVState(OldState,OldActions[actionnumber],BVec,bVec,LambdaVec)
+        NewState=New$State
+        NewStateProb=New$Prob
+        
+        for(NewStateNumber in 1:nrow(NewState))
+        {
+          if(all(NewState[NewStateNumber,]==SVStateSpace[StateNumber,]))
+          {
+            #If we can possibly move to the state we are working on we subtract the probability
+            if(oldstatenumber==1)
+            {
+              ConstraintRow[NumberOfXVariables+actionnumber]=ConstraintRow[NumberOfXVariables+actionnumber]-NewStateProb[NewStateNumber]
+            }
+            else
+            {
+              ConstraintRow[NumberOfXVariables+sum(NumberOfActionsFromState[1:(oldstatenumber-1)])+actionnumber]=
+                ConstraintRow[NumberOfXVariables+sum(NumberOfActionsFromState[1:(oldstatenumber-1)])+actionnumber]-NewStateProb[NewStateNumber]
+            }
+          }
+        }
+        
+        
+        
+        
+      }
+    }
+    
+    
+    
+    
+    ALHS=rbind(ALHS,ConstraintRow)
+    bRHS=c(bRHS,AlphaVec[StateNumber])
+  }
+  
+  Objective=vector(length=NumberOfVariables)
+  #We now create the Objective
+  for(StateNumber in 1:nrow(SVStateSpace))
+  {
+    #We store our state we are working on the constraint row for
+    State=SVStateSpace[StateNumber,]
+    CurrentNode=which.min(State[1:n])
+    CurrentNodeRow=AdjMatrix[CurrentNode,]
+    
+    #Actions available from this state
+    Actions=vector(length=0)
+    for(Node in 1:n)
+    {
+      if(CurrentNodeRow[Node]==1)
+      {
+        Actions=c(Actions,Node)
+      }
+    }  
+    
+    for(ActionNumber in 1:NumberOfActionsFromState[StateNumber])
+    {
+      #For this state and this action store the cost in the objective function
+      if(StateNumber==1)
+      {
+        Objective[ActionNumber]=CostOfAction(State,Actions[ActionNumber],n,CostVec,xVec,LambdaVec)
+      }
+      else
+      {
+        Objective[sum(NumberOfActionsFromState[1:StateNumber-1])+ActionNumber]=CostOfAction(State,Actions[ActionNumber],n,CostVec,xVec,LambdaVec)
+      }
+    }
+  }
+  
+  return(list(Objective=Objective,MatrixConstraints=ALHS,VectorBounds=bRHS))
+}
+  
+SolveDualLP<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
+{
+  CreatedDual=CreateDualSetup(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
+  A=CreatedDual$MatrixConstraints
+  b=CreatedDual$VectorBounds
+  
+  print(A)
+  print(b)
+  
+  Objdir="min"
+  Objective=CreatedDual$Objective
+  
+  
+  Constdir=rep("=",nrow(A))
+  
+  
+  print("Starting to solve")
+  Solved=lp(Objdir,Objective,A,Constdir,b)
+  return(list(Value=Solved ,Solution=Solved$solution))
+}
+
 
 #Function to compare two policies (note. Assumed in same order as SVStateSpace)
 ComparePolicies<-function(Policy1,Policy2)
