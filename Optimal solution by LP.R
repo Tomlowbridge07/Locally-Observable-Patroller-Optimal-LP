@@ -1230,7 +1230,7 @@ CreateDualSetup<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec,SVStateSpace=N
     }
   }
   
-  return(list(Objective=Objective,MatrixConstraints=ALHS,VectorBounds=bRHS))
+  return(list(Objective=Objective,MatrixConstraints=ALHS,VectorBounds=bRHS,StateSpace=SVStateSpace,NumberOfActionsFromState=NumberOfActionsFromState))
 }
   
 SolveDualLP<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
@@ -1253,6 +1253,134 @@ SolveDualLP<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
   Solved=lp(Objdir,Objective,A,Constdir,b)
   return(list(Value=Solved ,Solution=Solved$solution))
 }
+
+OptimalDualDesicionPolicy<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
+{
+  #Solve the Dual LP
+  CreatedDual=CreateDualSetup(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
+  A=CreatedDual$MatrixConstraints
+  b=CreatedDual$VectorBounds
+  SVStateSpace=CreatedDual$StateSpace
+  NumberOfActionsFromState=CreatedDual$NumberOfActionsFromState
+  
+  print(A)
+  print(b)
+  
+  Objdir="min"
+  Objective=CreatedDual$Objective
+  
+  
+  Constdir=rep("=",nrow(A))
+  
+  
+  print("Starting to solve")
+  Solved=lp(Objdir,Objective,A,Constdir,b)
+  Solution=Solved$solution
+  Value=Solved$objval
+  print("Solution found")
+  print(Solution)
+  print("For objective value")
+  print(Value)
+  
+  #We now split the solution into x's and y's
+  NumberOfVariables=length(Solution)/2
+  OptimalX=Solution[1:NumberOfVariables]
+  print("Optimal x's are")
+  print(OptimalX)
+  OptimalY=Solution[(NumberOfVariables+1):length(Solution)]
+  print("Optimal y's are")
+  print(OptimalY)
+  
+  #From the optimal x/y's we create a decision rule
+  
+  #First identify Recurrent states and transient states
+  #Record 1 if recurrent, 0 if transient
+  StateType=vector(length=nrow(SVStateSpace))
+  #OptimalDecision=list(length=nrow(SVStateSpace))
+  OptimalDecision=list()
+  for(StateNumber in 1:nrow(SVStateSpace))
+  {
+    State=SVStateSpace[StateNumber,]
+    CurrentNode=which.min(State[1:n])
+    CurrentActions=AdjMatrix[CurrentNode,]
+    
+    NodesCanMoveTo=which(CurrentActions==1)
+    
+    #Work out the sum of the x's
+    if(StateNumber==1)
+    {
+      SumOfX=sum(OptimalX[1:NumberOfActionsFromState[1]])
+    }
+    else
+    {
+      SumOfX=sum(OptimalX[(sum(NumberOfActionsFromState[1:(StateNumber-1)])+1):sum(NumberOfActionsFromState[1:StateNumber])])
+    }
+    print(SumOfX)
+    if(SumOfX>0)
+    {
+      #print("We have a recurrent State")
+      #If the sum is postive then this state is recurrent and put into S_{x}
+      StateType[StateNumber]=1
+    
+      StatesOptimalDecisions=vector(length=0)
+      #We then run through and record all x>0
+      for(ActionNumber in 1:NumberOfActionsFromState[StateNumber])
+      {
+       if(StateNumber==1)
+       {
+        if(OptimalX[ActionNumber]>0)
+        {
+          #Record it as an optimal decision
+          StatesOptimalDecisions=c(StatesOptimalDecisions,NodesCanMoveTo[ActionNumber])
+        }
+       }
+       else
+       {
+         if(OptimalX[sum(NumberOfActionsFromState[1:(StateNumber-1)])+ActionNumber]>0)
+         {
+           StatesOptimalDecisions=c(StatesOptimalDecisions,NodesCanMoveTo[ActionNumber])
+         }
+       }
+      }
+      OptimalDecision[StateNumber]=StatesOptimalDecisions 
+    }
+    else
+    {
+      #print("We have a transient State")
+      #For transient states we look at y's
+      
+      #If the sum is postive then this state is recurrent and put into S_{x}
+      StateType[StateNumber]=0
+      
+      StatesOptimalDecisions=vector(length=0)
+      #We then run through and record all x>0
+      for(ActionNumber in 1:NumberOfActionsFromState[StateNumber])
+      {
+        if(StateNumber==1)
+        {
+          if(OptimalY[ActionNumber]>0)
+          {
+            #Record it as an optimal decision
+            StatesOptimalDecisions=c(StatesOptimalDecisions,NodesCanMoveTo[ActionNumber])
+          }
+        }
+        else
+        {
+          if(OptimalY[sum(NumberOfActionsFromState[1:(StateNumber-1)])+ActionNumber]>0)
+          {
+            StatesOptimalDecisions=c(StatesOptimalDecisions,NodesCanMoveTo[ActionNumber])
+          }
+        }
+      }
+      OptimalDecision[StateNumber]=StatesOptimalDecisions 
+    }
+    
+  }
+  
+  return(list(OptimalDecision=OptimalDecision,StateSpace=SVStateSpace))
+  
+}
+
 
 
 #Function to compare two policies (note. Assumed in same order as SVStateSpace)
