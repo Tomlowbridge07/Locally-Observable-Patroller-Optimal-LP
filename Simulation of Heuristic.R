@@ -131,7 +131,7 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
       #print("Evolved v is")
       #print(vVec)
       
-      AllInfo[[run,1]]=c(sVec,vVec)
+      AllInfo[[run,1]]=c(OldsVec,OldvVec)
       AllInfo[[run,2]]=MoveToNode
       AllInfo[[run,3]]=SeperatedRunCost[run,1]
       AllInfo[[run,4]]=SeperatedRunCost[run,2]
@@ -157,16 +157,17 @@ CompareSimulationInfoToPolicy<-function(FullInfo,ActionPolicy,StateSpace,BVec)
     l=length(CurrentState)
     n=l/2
     #Note here we retain the information for the observed when in state B+1, we will now remove this
-    for(i in 1:n)
+    for(j in 1:n)
     {
-      if(CurrentState[i]==(BVec[i]+1))
+      if(CurrentState[j]==(BVec[j]+1))
       {
-        CurrentState[i+n]=0
+        CurrentState[j+n]=0
       }
     }
     
     CurrentStateID=IdenityRow(CurrentState,StateSpace)
     PolicyDecision=ActionPolicy[CurrentStateID]
+
     
     print(paste("Our Decision at state ",toString(CurrentState)))
     print(paste("Proposed by simulation is: ",toString(Decision)," and policy suggests: ",toString(PolicyDecision)))
