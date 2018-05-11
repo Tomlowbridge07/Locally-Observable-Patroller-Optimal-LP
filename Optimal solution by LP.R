@@ -1230,7 +1230,7 @@ CreateDualSetup<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec,SVStateSpace=N
     }
   }
   
-  return(list(Objective=Objective,MatrixConstraints=ALHS,VectorBounds=bRHS,StateSpace=SVStateSpace,NumberOfActionsFromState=NumberOfActionsFromState))
+  return(list(Objective=Objective,MatrixConstraints=ALHS,VectorBounds=bRHS,StateSpace=SVStateSpace,NumberOfActionsFromState=NumberOfActionsFromState,AlphaVec=AlphaVec))
 }
   
 SolveDualLP<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
@@ -1377,7 +1377,107 @@ OptimalDualDesicionPolicy<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
     
   }
   
-  return(list(OptimalDecision=OptimalDecision,StateSpace=SVStateSpace))
+  return(list(OptimalValue=Value,OptimalDecision=OptimalDecision,StateSpace=SVStateSpace,AlphaVec=CreatedDual$AlphaVec))
+  
+}
+
+FindOptimalEquilibriumValuesByDual<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec,AlphaVec=NULL)
+{
+  BVec=ceiling(xVec)
+  #We first solve the dual problem to find optimal actions
+  print("Starting to solve Dual LP")
+  Solved=OptimalDualDesicionPolicy(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
+  print("Dual LP solved")
+  OptimalValue=Solved$OptimalValue
+  OptimalDecision=Solved$OptimalDecision
+  SVStateSpace=Solved$StateSpace
+  if(is.null(AlphaVec))
+  {
+    AlphaVec=Solved$AlphaVec
+  }
+  
+  
+  #Know we look at creating a matrix of simultaneous equations for those actions under primal problem
+  #We have 2xNumStates (for g's and y's)
+  NumStates=nrow(SVStateSpace)
+  ConstraintsMatrix=matrix(nrow=0,ncol=(2*NumStates))
+  VectorValue=vector(length=0)
+  #Form Type 1 constraints
+  for(StateNumber in 1:NumStates)
+  {
+    State=SVStateSpace[StateNumber,]
+    #For each state we get two constraints
+    ConstraintRow=vector(length=(2*NumStates))
+    
+    #For type one constraint we get g(s)-\sum p(j|s,a)g(j)=0
+    
+    #Place a one in this states position
+    ConstraintRow[StateNumber]=ConstraintRow[StateNumber]+1
+    
+    #Do the subtraction of proabilities
+    NodeMovedTo=OptimalDecision[[StateNumber]][1] #Note if more than one optimal decision is stored we will use the first one
+    New=NewSVState(State,NodeMovedTo,BVec,bVec,LambdaVec)
+    NewStates=New$State
+    NewStateProbs=New$Prob
+    #print(NewStates)
+    
+    #For each of the new states we subtract the probability of ending up there
+    for(i in 1:nrow(NewStates))
+    {
+      NewStateID=IdenityRow(NewStates[i,],SVStateSpace)
+      ConstraintRow[NewStateID]=ConstraintRow[NewStateID]-NewStateProbs[i]
+    }
+    ConstraintsMatrix=rbind(ConstraintsMatrix,ConstraintRow)
+    VectorValue=c(VectorValue,0)
+  }
+  #Form Type 2 Constraints
+  for(StateNumber in 1:NumStates)
+  {
+    State=SVStateSpace[StateNumber,]
+    #For each state we get two constraints
+    ConstraintRow=vector(length=(2*NumStates))
+    
+    #For type one constraint we get g(s)+h(s)-\sum p(j|s,a)h(j)=c(s,a)
+    
+    #Place a one in this states position
+    ConstraintRow[StateNumber]=ConstraintRow[StateNumber]+1
+    ConstraintRow[NumStates+StateNumber]=ConstraintRow[NumStates+StateNumber]+1
+    
+    #Do the subtraction of proabilities
+    NodeMovedTo=OptimalDecision[[StateNumber]][1] #Note if more than one optimal decision is stored we will use the first one
+    New=NewSVState(State,NodeMovedTo,BVec,bVec,LambdaVec)
+    NewStates=New$State
+    NewStateProbs=New$Prob
+    
+    #For each of the new states we subtract the probability of ending up there
+    for(i in 1:nrow(NewStates))
+    {
+      NewStateID=IdenityRow(NewStates[i,],SVStateSpace)
+      ConstraintRow[NumStates+NewStateID]=ConstraintRow[NumStates+NewStateID]-NewStateProbs[i]
+    }
+    ConstraintsMatrix=rbind(ConstraintsMatrix,ConstraintRow)
+    VectorValue=c(VectorValue,CostOfAction(State,NodeMovedTo,n,CostVec,xVec,LambdaVec))
+  }
+  
+  print("Constraints are")
+  print(ConstraintsMatrix)
+  print("vector values are")
+  print(VectorValue)
+  
+  #We now attempt to solve the problem (Still using LP solved with equal constraints)
+  
+  Objdir="max"
+  Objective=c(AlphaVec,rep(0,NumStates))
+  
+  
+  Constdir=rep("=",nrow(ConstraintsMatrix))
+  
+  
+  print("Starting to solve")
+  Solved=lp(Objdir,Objective,ConstraintsMatrix,Constdir,VectorValue)
+  OptimaSol=Solved$solution
+  
+  return(list(OptimalEquilibrium=OptimaSol))
   
 }
 
