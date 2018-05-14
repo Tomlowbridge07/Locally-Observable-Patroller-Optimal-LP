@@ -182,6 +182,18 @@ CompareSimulationInfoToPolicy<-function(FullInfo,ActionPolicy,StateSpace,BVec)
     }
     
   }
+  
+  #Disagree stores which we disagree at
+  DisagreeAt=which(AgreeAtStep==0)
+  print("The Policys disagree at the following")
+  if(length(DisagreeAt)!=0)
+  {
+   for(i in 1:length(DisagreeAt))
+   {
+     print(paste("Step: ",toString(DisagreeAt[i]),", State: ",toString(FullInfo[[DisagreeAt[i],1]])))
+     print(paste("Decisions made where, Index proposes: ",toString(FullInfo[[DisagreeAt[i],2]])," but policy suggests: ",toString(ActionPolicy[IdenityRow(FullInfo[[DisagreeAt[i],1]],StateSpace)])))
+   }
+  }
   return(AgreeAtStep)
 }
 
@@ -196,7 +208,7 @@ SimulationExperiment<-function(NumberOfTrials,NumberOfRunSteps,HeuristicDepth,He
   
   for(trial in 1:NumberOfTrials)
   {
-    Simulation=SimulationForEvolution(NumberOfRunSteps,HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec)
+   Simulation=SimulationForEvolution(NumberOfRunSteps,HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec)
    RunningCostMatrix=rbind(RunningCostMatrix,Simulation$CostForStep)
    AveragecostVec[trial]=Simulation$Average
    #print(RunningCostMatrix)

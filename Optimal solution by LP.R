@@ -1497,5 +1497,6 @@ ComparePolicies<-function(Policy1,Policy2)
       AgreeAt[i]=1
     }
   }
+
   return(AgreeAt)
 }
