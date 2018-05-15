@@ -315,6 +315,12 @@ CreateSVStates<-function(n,BVec,bVec)
   return(FullStateSpace) 
 }
 
+#This function is a variation on the above with the possibility of having an unkown transitionary state.
+CreateTransSVStates<-function(n,BVec,bVec)
+{
+  
+}
+
 # #create function for expectation of evolved state
 # ListOfEvolvedState<-function(StateVector,NodeMovedTo,n,B,b)
 # {
@@ -435,6 +441,35 @@ NewSVState<-function(CurrentSVState,NodeMovedTo,BVec,bVec,lambdaVec)
   return(list(State=NewSVState,Prob=NewVStatesProbs))
 }
 
+#New state if current state is neglected
+NewSVStateIfNeglect<-function(CurrentSVState,BVec,bVec,lambdaVec)
+{
+  #Note. We cannot simply use the prior functions
+  n=length(CurrentSVState)/2
+  sVec=CurrentSVState[1:n]
+  vVec=CurrentSVState[(n+1):(2*n)]
+  
+  #Now we evolve sVec , by increasing it to cap, if its capped we removed the observed info
+  for(i in 1:n)
+  {
+    if(sVec[i] < BVec[i])
+    {
+      sVec[i]=sVec[i]+1
+    }
+    else if(sVec[i]==BVec[i])
+    {
+      sVec[i]=sVec[i]+1
+      vVec[i]=0
+    }
+    else
+    {
+      vVec[i]=0
+    }
+  }
+  return(c(sVec,vVec))
+}
+
+
 #Identify the row which a vector comes from
 IdenityRow<-function(Vec,Mat)
 {
@@ -518,6 +553,15 @@ CostOfAction<-function(StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)
 
   return(Sum)
 }
+
+#Cost if the state is neglected
+CostToNeglect<-function(StateVector,n,CostVec,xVec,LambdaVec)
+{
+  
+  #We can use prior formula but with no node every visited
+  return(CostOfAction(StateVector,-1,n,CostVec,xVec,LambdaVec))
+}
+
 
 SeperatedCostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)
 {
@@ -1490,9 +1534,9 @@ ComparePolicies<-function(Policy1,Policy2)
   AgreeAt=vector(length=length(Policy1))
   for(i in 1:length(Policy1))
   {
-    print(Policy1[i])
-    print(Policy2[i])
-    if(all.equal(Policy1[i],Policy2[i]))
+    print(Policy1[[i]])
+    print(Policy2[[i]])
+    if(all(Policy1[[i]]==Policy2[[i]]))
     {
       AgreeAt[i]=1
     }
