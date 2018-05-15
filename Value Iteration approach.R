@@ -156,3 +156,94 @@ ValueIterationForGame<-function(MaxNoSteps,Tolerance,AdjacencyMatrix,xVec,bVec,C
 
  return(list(LowerBound=LowerBound,UpperBound=UpperBound,Actions=ActionsMatrix,EndActions=EndActions))
 }
+
+#Function to work out the value for a particular number of steps
+#Expects states to be passed as a matrix (with rows being a state with s_1 , s_2,...,s_n,v_1,...,v_2)
+ValueFunctionForScenario<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Scenario,ScenarioTracking=NULL,PriorValueFunction=NULL,PriorActionsMatrix=NULL)
+{
+  n=ncol(StateSpace)/2
+  if(is.null(ScenarioTracking))
+  {
+    ScenarioTracking=rep(1,n)
+  }
+  
+  StateSpaceSize=nrow(StateSpace)
+  n=nrow(AdjacencyMatrix)
+  BVec=ceiling(xVec)
+  
+  #Stores the value of this iteration
+  ValueVector=rep(0,StateSpaceSize)
+  
+  #Store a list of actions for this iteration
+  AddOnActionsMatrix=matrix(list(),nrow=1,ncol=StateSpaceSize)
+  
+  if(Steps==0) #Base case
+  {
+    return(list(Values=ValueVector,Actions=AddOnActionsMatrix))
+  }
+  else if(Steps!=0) 
+  {
+    #Work out previous step
+    if(is.null(PriorValueFunction) || is.null(PriorActionsMatrix))
+    {
+      Prior=ValueFunction(Steps-1,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
+      PriorValueFunction=Prior$Values
+      PriorActionsMatrix=Prior$Actions
+    }
+    
+    
+    #Form a vector from which to take the minimum for all states
+    for(state in 1:StateSpaceSize)
+    {
+      #Current state is
+      CurrentState=StateSpace[state,]
+      
+      #Current node is
+      CurrentNode=which.min(CurrentState[1:n])
+      
+      #For each state we calculate all the values
+      OptionsVector=vector(length=n)
+      
+      
+      #for each option of node to move to calculate the cost and add the previous cost
+      for(option in 1:n)
+      {
+        
+        if(AdjacencyMatrix[CurrentNode,option]==1)
+        {
+          OptionsVector[option]=CostOfAction(CurrentState,option,n,CostVec,xVec,LambdaVec) #Cost of action
+          
+          #We now add the expected future cost, this means a proportion for each possible v state we can transistion to by taking this action
+          #We can retrive the probability and states from a function
+          
+          EvolvedStates=NewSVState(CurrentState,option,BVec,bVec,LambdaVec)$State
+          
+          #We now use the scenario to idenity the evolved state and prob=1
+          EvolvedState=EvolvedStates[(min(bVec[CurrentNode],Scenario[CurrentNode,ScenarioTracking[CurrentNode]])+1),]
+          ScenarioTracking[CurrentNode]=ScenarioTracking[CurrentNode]+1
+          IDEvolvedState=IdenityRow(EvolvedState,StateSpace)
+          OptionsVector[option]=OptionsVector[option]+PriorValueFunction[IDEvolvedState]
+        }
+        else
+        {
+          OptionsVector[option]=NaN
+        }
+        
+        
+        
+      }
+      
+      
+      
+      #Set the Value Vector for that state 
+      ValueVector[state]=min(OptionsVector)
+      #We will also store the action used to achieve this.
+      AddOnActionsMatrix[[1,state]]=which(OptionsVector==ValueVector[state])
+    }
+    ActionsMatrix=rbind(PriorActionsMatrix,AddOnActionsMatrix)
+    
+  }
+  
+  #Return all values
+  return(list(Values=ValueVector,Actions=ActionsMatrix))
+}
