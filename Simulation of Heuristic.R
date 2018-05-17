@@ -28,7 +28,7 @@ CreateSimulationScenario<-function(NoSteps,n,LambdaVec)
 #   return(NewvVec)
 # }
 
-SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,SimulationScenario=NULL,vMaxVec=NULL)
+SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,BurnOut=0,SimulationScenario=NULL,vMaxVec=NULL)
 {
   #Set up simulation matrix and tracking
   if(is.null(SimulationScenario))
@@ -140,6 +140,14 @@ SimulationForEvolution<-function(NumberOfRunSteps,HeuristicDepth,HeuristicFuncti
     }
     
   }
+  
+  #We apply a burn out to remove the first lot of results (to allow it to reach some equilibrium)
+  Keep=(BurnOut+1):NumberOfRunSteps
+  RunCost=RunCost[Keep]
+  SeperatedRunCost=SeperatedRunCost[Keep,]
+  CumulativeSeperatedRunCost=CumulativeSeperatedRunCost[Keep,]
+  AllInfo=AllInfo[Keep,]
+  
   AverageCost=sum(RunCost)/NumberOfRunSteps
   print(paste("Average cost is ",toString(AverageCost)))
   return(list(Average=AverageCost,CostForStep=RunCost,SeperatedCostForStep=SeperatedRunCost,CumulativeSeperatedCostForStep=CumulativeSeperatedRunCost,FullInfoMatrix=AllInfo))

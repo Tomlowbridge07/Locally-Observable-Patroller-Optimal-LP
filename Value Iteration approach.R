@@ -159,15 +159,15 @@ ValueIterationForGame<-function(MaxNoSteps,Tolerance,AdjacencyMatrix,xVec,bVec,C
 
 #Function to work out the value for a particular number of steps
 #Expects states to be passed as a matrix (with rows being a state with s_1 , s_2,...,s_n,v_1,...,v_2)
-ValueFunctionForScenario<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Scenario,ScenarioTracking=NULL,PriorValueFunction=NULL,PriorActionsMatrix=NULL)
+ValueFunctionForScenario<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Scenario,PriorTrackingMatrix=NULL,PriorValueFunction=NULL,PriorActionsMatrix=NULL)
 {
   n=ncol(StateSpace)/2
-  if(is.null(ScenarioTracking))
-  {
-    ScenarioTracking=rep(1,n)
-  }
-  
   StateSpaceSize=nrow(StateSpace)
+  
+  
+  ScenarioTrackingMatrix=matrix(rep(1,(StateSpaceSize*n)),nrow=StateSpaceSize,ncol=n)
+  
+  
   n=nrow(AdjacencyMatrix)
   BVec=ceiling(xVec)
   
@@ -179,19 +179,20 @@ ValueFunctionForScenario<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,Co
   
   if(Steps==0) #Base case
   {
-    return(list(Values=ValueVector,Actions=AddOnActionsMatrix))
+    return(list(Values=ValueVector,Actions=AddOnActionsMatrix,TrackingMatrix=ScenarioTrackingMatrix))
   }
   else if(Steps!=0) 
   {
     #Work out previous step
     if(is.null(PriorValueFunction) || is.null(PriorActionsMatrix))
     {
-      Prior=ValueFunction(Steps-1,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
+      Prior=ValueFunctionForScenario(Steps-1,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Scenario)
       PriorValueFunction=Prior$Values
       PriorActionsMatrix=Prior$Actions
+      PriorTrackingMatrix=Prior$TrackingMatrix
     }
     
-    
+    NewTracking=matrix(nrow=0,ncol=ncol(PriorTrackingMatrix))
     #Form a vector from which to take the minimum for all states
     for(state in 1:StateSpaceSize)
     {
@@ -200,6 +201,9 @@ ValueFunctionForScenario<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,Co
       
       #Current node is
       CurrentNode=which.min(CurrentState[1:n])
+      
+      #Current Tracking is
+      CurrentTrackingScenario=PriorTrackingMatrix[state,]
       
       #For each state we calculate all the values
       OptionsVector=vector(length=n)
@@ -219,8 +223,7 @@ ValueFunctionForScenario<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,Co
           EvolvedStates=NewSVState(CurrentState,option,BVec,bVec,LambdaVec)$State
           
           #We now use the scenario to idenity the evolved state and prob=1
-          EvolvedState=EvolvedStates[(min(bVec[CurrentNode],Scenario[CurrentNode,ScenarioTracking[CurrentNode]])+1),]
-          ScenarioTracking[CurrentNode]=ScenarioTracking[CurrentNode]+1
+          EvolvedState=EvolvedStates[(min(bVec[CurrentNode],Scenario[CurrentNode,CurrentTrackingScenario[CurrentNode]])+1),]
           IDEvolvedState=IdenityRow(EvolvedState,StateSpace)
           OptionsVector[option]=OptionsVector[option]+PriorValueFunction[IDEvolvedState]
         }
@@ -238,12 +241,16 @@ ValueFunctionForScenario<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,Co
       #Set the Value Vector for that state 
       ValueVector[state]=min(OptionsVector)
       #We will also store the action used to achieve this.
-      AddOnActionsMatrix[[1,state]]=which(OptionsVector==ValueVector[state])
+      ActionToTake=which(OptionsVector==ValueVector[state])[1]
+      AddOnActionsMatrix[[1,state]]=ActionToTake
+      #We will affect the tracking matrix for which action we took
+      CurrentTrackingScenario[ActionToTake]=CurrentTrackingScenario[ActionToTake]+1
+      NewTracking=rbind(NewTracking,CurrentTrackingScenario)
     }
     ActionsMatrix=rbind(PriorActionsMatrix,AddOnActionsMatrix)
     
   }
   
   #Return all values
-  return(list(Values=ValueVector,Actions=ActionsMatrix))
+  return(list(Values=ValueVector,Actions=ActionsMatrix,TrackingMatrix=NewTracking))
 }
