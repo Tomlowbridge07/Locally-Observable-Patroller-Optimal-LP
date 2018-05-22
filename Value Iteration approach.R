@@ -157,8 +157,98 @@ ValueIterationForGame<-function(MaxNoSteps,Tolerance,AdjacencyMatrix,xVec,bVec,C
  return(list(LowerBound=LowerBound,UpperBound=UpperBound,Actions=ActionsMatrix,EndActions=EndActions))
 }
 
+#This function works out the value function for a particular policy.
+ValueFunctionForPolicy<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy,PriorValueFunction=NULL)
+{
+  StateSpaceSize=nrow(StateSpace)
+  n=nrow(AdjacencyMatrix)
+  BVec=ceiling(xVec)
+  
+  #Stores the value of this iteration
+  ValueVector=rep(0,StateSpaceSize)
+  
+  
+  if(Steps==0) #Base case
+  {
+    return(ValueVector)
+  }
+  else if(Steps!=0) 
+  {
+    #Work out previous step
+    if(is.null(PriorValueFunction))
+    {
+      PriorValueFunction=ValueFunctionForPolicy(Steps-1,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy)
+    }
+    
+    #Form a vector from which to take the minimum for all states
+    for(state in 1:StateSpaceSize)
+    {
+      #For each state we know how it will act
+      ActionTaken=(Policy[[state]])[1]
+      CurrentState=StateSpace[state,]
+      Evolved=NewSVState(CurrentState,ActionTaken,BVec,bVec,LambdaVec)
+      EvolvedStates=Evolved$State
+      EvolvedStatesProb=Evolved$Prob
+      
+      ValueVector[state]=CostOfAction(CurrentState,ActionTaken,n,CostVec,xVec,LambdaVec) 
+          
+          for(i in 1:nrow(EvolvedStates))
+          {
+            IDEvolvedState=IdenityRow(EvolvedStates[i,],StateSpace)
+            
+            #Add its prior costs * probability
+            ValueVector[state]=ValueVector[state]+PriorValueFunction[IDEvolvedState]* EvolvedStatesProb[i]
+          }
+        }
+        
+      }
+  #Return all values
+  return(ValueVector)
+}
+
+ValueIterationForPolicy<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy)
+{
+  step=1
+  BoundWidthError=Tolerance+1
+  PriorValueFunction=ValueFunctionForPolicy(0,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy)
+  while(step<=MaxNoSteps && BoundWidthError>=Tolerance)
+  {
+    print(paste("On Step ",toString(step)))
+    
+    #Work out the value vector for this number of steps
+    NewValueFunction=ValueFunctionForPolicy(step,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy,PriorValueFunction)
+      
+    #For this state calcluate min and max for all states
+    CostBetweenSteps=NewValueFunction-PriorValueFunction
+    MaxForStates=max(CostBetweenSteps)
+    MinForStates=min(CostBetweenSteps)
+    
+    BoundWidth=MaxForStates-MinForStates
+    BoundWidthError=BoundWidth/MinForStates
+    step=step+1
+    
+    PriorValueFunction=NewValueFunction
+    
+    print(MinForStates)
+    print(MaxForStates)
+  }
+  
+  if(BoundWidthError<Tolerance)
+  {
+    print("Returning due to tolerance reached")
+    return(list(LowerBound=MinForStates,UpperBound=MaxForStates))
+  }
+  else
+  {
+    print("Returning due to time out")
+    return(list(LowerBound=MinForStates,UpperBound=MaxForStates))
+  }
+}
+
+
 #Function to work out the value for a particular number of steps
 #Expects states to be passed as a matrix (with rows being a state with s_1 , s_2,...,s_n,v_1,...,v_2)
+#Note. This function has perfect foresight
 ValueFunctionForScenario<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Scenario,PriorTrackingMatrix=NULL,PriorValueFunction=NULL,PriorActionsMatrix=NULL)
 {
   n=ncol(StateSpace)/2

@@ -329,9 +329,6 @@ RunPolicyForScenario<-function(NumberOfRunSteps,Policy,n,AdjacencyMatrix,IndexFo
   return(list(Average=AverageCost,CostForStep=RunCost,SeperatedCostForStep=SeperatedRunCost,CumulativeSeperatedCostForStep=CumulativeSeperatedRunCost,FullInfoMatrix=AllInfo))
 }
 
-
-
-
 SimulationExperiment<-function(NumberOfTrials,NumberOfRunSteps,HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
 {
  #We repeat the simulation

@@ -1528,17 +1528,22 @@ FindOptimalEquilibriumValuesByDual<-function(AdjMatrix,n,xVec,bVec,CostVec,Lambd
 
 
 #Function to compare two policies (note. Assumed in same order as SVStateSpace)
-ComparePolicies<-function(Policy1,Policy2)
+ComparePolicies<-function(Policy1,Policy2,StateSpace=NULL)
 {
   #We assume the Policies have the format of a vector of lists
   AgreeAt=vector(length=length(Policy1))
   for(i in 1:length(Policy1))
   {
-    print(Policy1[[i]])
-    print(Policy2[[i]])
+    #print(Policy1[[i]])
+    #print(Policy2[[i]])
     if(all(Policy1[[i]]==Policy2[[i]]))
     {
       AgreeAt[i]=1
+    }
+    else
+    {
+      print(paste("Policies disagree at state ",toString(StateSpace[i,])))
+      print(paste("Policy 1 suggests: ",toString(Policy1[[i]]),"Policy 2 suggest: ",toString(Policy2[[i]])))
     }
   }
 

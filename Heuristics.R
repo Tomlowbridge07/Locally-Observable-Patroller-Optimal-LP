@@ -122,7 +122,8 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
   #Note. We will be using mean v Evolution for use with the index
   EvolvedStates=matrix(0,nrow=0,ncol=2*n)
   BenefitForPath=vector(length=0)
-  BestPathforStep=matrix(0,nrow=NoSteps,ncol=NoSteps)
+  #Note. Best Path for Step may use multiple for steps if there are mutliple option for that length of path
+  BestPathforStep=matrix(0,nrow=0,ncol=NoSteps)
   
   for(Step in 1:NoSteps)
   {
@@ -158,10 +159,17 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
       print(BenefitForPath)
       #Identify the maximal elements
       MaximalElements=which(BenefitForPath==max(BenefitForPath))
-      #We now choose one at random
-      ChosenMax=MaximalElements[sample(1:length(MaximalElements),1)]
-      BestPath=Paths[ChosenMax,]
-      BestPathforStep[Step,]=BestPath
+
+      
+      #We now store all those that provide maximal benefit
+      for(MaximalElementsNo in 1:length(MaximalElements))
+      {
+        BestPathforStep=rbind(BestPathforStep,Paths[MaximalElements[MaximalElementsNo],])
+      }
+      
+      
+      
+      
       # print("I have chosen the path")
       # print(BestPath)
     }
@@ -211,10 +219,14 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
       MaximalElements=which(BenefitForPath==max(BenefitForPath))
       # print("Printing maximal elements")
       # print(MaximalElements)
-      #We now choose one at random
-      ChosenMax=MaximalElements[sample(1:length(MaximalElements),1)]
-      BestPath=Paths[ChosenMax,]
-      BestPathforStep[Step,]=BestPath
+
+      
+      #We now store all those that provide maximal benefit
+      for(MaximalElementsNo in 1:length(MaximalElements))
+      {
+        BestPathforStep=rbind(BestPathforStep,Paths[MaximalElements[MaximalElementsNo],])
+      }
+      
       # print("I have chosen the path")
       # print(BestPath)
 
@@ -224,21 +236,29 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
   
   #For each look ahead step we have a path
   #print(BestPathforStep)
-  AverageCostforPath=vector(length=NoSteps)
+  NumberOfPathsToConsider=nrow(BestPathforStep)
+  AverageCostForPath=vector(length=NumberOfPathsToConsider)
   #We now need to see how good they perform
-  for(i in 1:NoSteps)
+  for(i in 1:NumberOfPathsToConsider)
   {
     #We compute the average cost of following such a strategy to decide which paths to pick
     #We use determinsitic evolution to the mean state in v
-    AverageCostforPath[i]=DeterministicCostEvaluationOfPath(BestPathforStep[i,],n,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)$Average
+    DeterministicGen=DeterministicCostEvaluationOfPath(BestPathforStep[i,],n,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)
+    AverageCostForPath[i]=DeterministicGen$Average
+    #For each Path we have have end point
+    EndOfPathState=DeterministicGen$NewMeanSVState
+    #From this work out the average cost to decay
+    AverageCostForPath[i]=AverageCostForPath[i]+DecayToEndCost(n,EndOfPathState[1:n],EndOfPathState[(n+1):(2*n)],CostVec,LambdaVec,bVec,xVec)
   }
   # print("about to print paths and determinisitic cost of paths")
    print(BestPathforStep)
-   print(AverageCostforPath)
+   print(AverageCostForPath)
   #Identify the maximal elements
-  MinimalElements=which(AverageCostforPath==min(AverageCostforPath))
+  MinimalElements=which(AverageCostForPath==min(AverageCostForPath))
   #We now choose one at random
-  ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
+  #ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
+  #We will just pick the minimum to avoid confusion
+  ChosenMin=MinimalElements[1]
   OverallBestPath=BestPathforStep[ChosenMin,]
   return(OverallBestPath[1])
 }
@@ -401,7 +421,7 @@ MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
   #Note. We will be using mean v Evolution for use with the index
   EvolvedStates=matrix(0,nrow=0,ncol=2*n)
   PenaltyForPath=vector(length=0)
-  BestPathforStep=matrix(0,nrow=NoSteps,ncol=NoSteps)
+  BestPathforStep=matrix(0,nrow=0,ncol=NoSteps)
   
   for(Step in 1:NoSteps)
   {
@@ -436,9 +456,13 @@ MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
       #Identify the maximal elements
       MinimalElements=which(PenaltyForPath==min(PenaltyForPath))
       #We now choose one at random
-      ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
-      BestPath=Paths[ChosenMin,]
-      BestPathforStep[Step,]=BestPath
+      #ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
+      
+      #We now store all those that provide maximal benefit
+      for(MinimalElementsNo in 1:length(MinimalElements))
+      {
+        BestPathforStep=rbind(BestPathforStep,Paths[MinimalElements[MinimalElementsNo],])
+      }
     }
     else
     {
@@ -481,9 +505,14 @@ MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
       #Identify the maximal elements
       MinimalElements=which(PenaltyForPath==min(PenaltyForPath))
       #We now choose one at random
-      ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
-      BestPath=Paths[ChosenMin,]
-      BestPathforStep[Step,]=BestPath
+      #ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
+      #We now store all those that provide maximal benefit
+      
+      #We now store all those that provide maximal benefit
+      for(MinimalElementsNo in 1:length(MinimalElements))
+      {
+        BestPathforStep=rbind(BestPathforStep,Paths[MinimalElements[MinimalElementsNo],])
+      }
     }
     
   }
@@ -511,7 +540,8 @@ MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
   #Identify the maximal elements
   MinimalElements=which(AverageCostForPath==min(AverageCostForPath))
   #We now choose one at random
-  ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
+  #ChosenMin=MinimalElements[sample(1:length(MinimalElements),1)]
+  ChosenMin=MinimalElements[1]
   OverallBestPath=BestPathforStep[ChosenMin,]
   return(OverallBestPath[1])
 }
