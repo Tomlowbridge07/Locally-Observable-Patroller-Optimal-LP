@@ -1035,13 +1035,15 @@ CreateDualSetup<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec,SVStateSpace=N
     #First we work out the current node (and then how many actions can be taken)
     StateVector=SVStateSpace[state,]
     CurrentNode=which.min(StateVector[1:n])
+    #print(paste("Current Node is ",toString(CurrentNode)))
     
     AdjRow=AdjMatrix[CurrentNode,]
   
     NumberOfXVariables=NumberOfXVariables+length(AdjRow[AdjRow==1])
     NumberOfActionsFromState=c(NumberOfActionsFromState,length(AdjRow[AdjRow==1]))
+    #print(NumberOfActionsFromState)
   }
-  
+
   NumberOfYVariables=NumberOfXVariables
   NumberOfVariables=NumberOfXVariables+NumberOfYVariables
   
@@ -1094,7 +1096,7 @@ CreateDualSetup<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec,SVStateSpace=N
     {
       OldState=SVStateSpace[oldstatenumber,]
       OldNode=which.min(OldState[1:n])
-      OldNodeRow=AdjMatrix[CurrentNode,]
+      OldNodeRow=AdjMatrix[OldNode,]
       #Actions available from this state
       OldActions=vector(length=0)
       for(Node in 1:n)
@@ -1104,10 +1106,10 @@ CreateDualSetup<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec,SVStateSpace=N
           OldActions=c(OldActions,Node)
         }
       }  
+      
       for(actionnumber in 1:NumberOfActionsFromState[oldstatenumber])
       {
         #Using this oldstate and action , is it possible that the new state is the current working state
-        
         New=NewSVState(OldState,OldActions[actionnumber],BVec,bVec,LambdaVec)
         NewState=New$State
         NewStateProb=New$Prob
@@ -1193,7 +1195,7 @@ CreateDualSetup<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec,SVStateSpace=N
     {
       OldState=SVStateSpace[oldstatenumber,]
       OldNode=which.min(OldState[1:n])
-      OldNodeRow=AdjMatrix[CurrentNode,]
+      OldNodeRow=AdjMatrix[OldNode,]
       #Actions available from this state
       OldActions=vector(length=0)
       for(Node in 1:n)
@@ -1279,9 +1281,11 @@ CreateDualSetup<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec,SVStateSpace=N
   
 SolveDualLP<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
 {
+  print("Starting to Set up the dual problem")
   CreatedDual=CreateDualSetup(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
   A=CreatedDual$MatrixConstraints
   b=CreatedDual$VectorBounds
+  StateSpace=CreatedDual$StateSpace
   
   print(A)
   print(b)
@@ -1295,7 +1299,7 @@ SolveDualLP<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
   
   print("Starting to solve")
   Solved=lp(Objdir,Objective,A,Constdir,b)
-  return(list(Value=Solved ,Solution=Solved$solution))
+  return(list(Value=Solved ,Solution=Solved$solution,StateSpace=StateSpace))
 }
 
 OptimalDualDesicionPolicy<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
