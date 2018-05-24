@@ -22,6 +22,7 @@ SizeOfOMEGA<-function(n,B,b)
 #Creating a matrix with all stats for s
 CreateSStatesForConstantB<-function(n,B)
 {
+
   StateMatrix=matrix(nrow=0,ncol=n)
   for(ChoiceToBeOne in 1:n) #choose which element is 1
   {
@@ -1299,7 +1300,7 @@ SolveDualLP<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)
   
   print("Starting to solve")
   Solved=lp(Objdir,Objective,A,Constdir,b)
-  return(list(Value=Solved ,Solution=Solved$solution,StateSpace=StateSpace))
+  return(list(Value=Solved$objval ,Solution=Solved$solution,StateSpace=StateSpace))
 }
 
 OptimalDualDesicionPolicy<-function(AdjMatrix,n,xVec,bVec,CostVec,LambdaVec)

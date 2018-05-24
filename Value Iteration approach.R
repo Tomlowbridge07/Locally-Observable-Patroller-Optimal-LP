@@ -236,12 +236,12 @@ ValueIterationForPolicy<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatri
   if(BoundWidthError<Tolerance)
   {
     print("Returning due to tolerance reached")
-    return(list(LowerBound=MinForStates,UpperBound=MaxForStates))
+    return(list(LowerBound=MinForStates,UpperBound=MaxForStates,ValueFunction=NewValueFunction,StepsRun=step-1))
   }
   else
   {
     print("Returning due to time out")
-    return(list(LowerBound=MinForStates,UpperBound=MaxForStates))
+    return(list(LowerBound=MinForStates,UpperBound=MaxForStates,ValueFunction=NewValueFunction,StepsRun=step-1))
   }
 }
 
