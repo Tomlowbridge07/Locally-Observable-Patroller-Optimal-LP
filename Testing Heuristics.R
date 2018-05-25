@@ -57,10 +57,19 @@ RunTestForMultipleHeuristics<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaV
   StateSpace=DualSolved$StateSpace
   print(paste("Dual has been solved for:",toString(DualObjectiveValue)))
   
-  ToleranceForIt=10^floor(log10(DualObjectiveValue)-4)
+  if(DualObjectiveValue>0)
+  {
+    ToleranceForIt=10^floor(log10(DualObjectiveValue)-4)
+  }
+  else
+  {
+    ToleranceForIt=10^floor(-1000)
+  }
+  
   
   #Create Storage for errors
   Errors=matrix(0,ncol=4,nrow=NumberOfHeuristicFuncs*NumberOfHeuristicsDepths*NumberOfIndexFuncs)
+  PolicyList=list() #Note this list is a list of lists
   counter=1
   
 
@@ -98,6 +107,8 @@ RunTestForMultipleHeuristics<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaV
         Errors[counter,2]=HeuristicDepthNum
         Errors[counter,3]=IndexFuncNum
         Errors[counter,4]=PercentageError
+        PolicyList[[counter]]=PolicyByHeuristic
+        print(PolicyList)
         counter=counter+1
         
       }
@@ -111,16 +122,16 @@ RunTestForMultipleHeuristics<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaV
   IDBestHeurisitic=which(Errors[,4]==MinError)
   print(IDBestHeurisitic)
   
-  BestHeurisitcs=Errors[IDBestHeurisitic,1:3]
+  BestHeuristics=Errors[IDBestHeurisitic,1:3]
     
-  return(list(Errors=Errors,MinError=MinError,BestHeurisitcs=BestHeurisitcs))
+  return(list(Errors=Errors,MinError=MinError,BestHeuristics=BestHeuristics))
 }
 
 #This functions generates a random adjacency matrix
 GenerateAdjConnectedMatrix<-function(NumNodes,NumEdges)
 {
-  stopifnot(NumEdges>(NumNodes-1))
-  stopifnot(NumEdges<(NumNodes+1)*(NumNodes/2))
+  stopifnot(NumEdges>=(NumNodes-1))
+  stopifnot(NumEdges<=(NumNodes+1)*(NumNodes/2))
   
   AdjacencyMatrix=matrix(0,nrow=NumNodes,ncol=NumNodes)
   
@@ -179,8 +190,52 @@ GenerateAdjConnectedMatrix<-function(NumNodes,NumEdges)
 GenerateTestScenarios<-function(MinNumNodes,MaxNumNodes,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
 {
   #Generating the Matrix
-  NumberOfNodes
+  NumberOfNodes=sample(MinNumNodes:MaxNumNodes,size=1)
+  NumberOfEdges=sample((NumberOfNodes-1):((NumberOfNodes-1)*NumberOfNodes/2),size=1)
+  AdjacencyMatrix=GenerateAdjConnectedMatrix(NumberOfNodes,NumberOfEdges)
+  
+  n=NumberOfNodes
+  
+  #Generate the xvec,bvec,lambdavec,costvec
+  xVec=runif(n,min=MinAttackTime,max=MaxAttackTime)
+  bVec=runif(n,min=MinObservedSize,max=MaxObservedSize)
+  LambdaVec=runif(n,min=MinArrivalRate,max=MaxArrivalRate)
+  CostVec=runif(n,min=MinCost,max=MaxCost)
+  
+  return(list(AdjacencyMatrix=AdjacencyMatrix,xVec=xVec,bVec=bVec,LambdaVec=LambdaVec,CostVec=CostVec))
 }
   
-#This function is 
-RunTestForMultipleScenarios
+#This function is going to run the test for multiple scenarios
+RunTestForMultipleScenarios<-function(NumberOfScenarios,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration,
+                                      MinNumNodes,MaxNumNodes,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
+{
+  #This  matrix  stores the minerror,the best heuristic and the scenario
+  ScenarioRecording=matrix(list(),nrow=NumberOfScenarios,ncol=7)
+  for(ScenarioNumber in 1:NumberOfScenarios)
+  {
+    #For each scenario we generate  the  scenario
+    Scenario=GenerateTestScenarios(MinNumNodes,MaxNumNodes,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
+    AdjacencyMatrix=Scenario$AdjacencyMatrix
+    xVec=Scenario$xVec
+    bVec=Scenario$bVec
+    LambdaVec=Scenario$LambdaVec
+    CostVec=Scenario$CostVec
+    
+    ScenarioTest=RunTestForMultipleHeuristics(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration)
+    BestHeuristics=ScenarioTest$BestHeuristics
+    MinError=ScenarioTest$MinError
+    print(BestHeuristics)
+    print(MinError)
+    
+    ScenarioRecording[[ScenarioNumber,1]]=MinError
+    ScenarioRecording[[ScenarioNumber,2]]=BestHeuristics
+    ScenarioRecording[[ScenarioNumber,3]]=AdjacencyMatrix
+    ScenarioRecording[[ScenarioNumber,4]]=xVec
+    ScenarioRecording[[ScenarioNumber,5]]=bVec
+    ScenarioRecording[[ScenarioNumber,6]]=LambdaVec
+    ScenarioRecording[[ScenarioNumber,7]]=CostVec
+    #print(Scenario)
+    
+  }
+  return(ScenarioRecording)
+}

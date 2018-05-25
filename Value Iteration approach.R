@@ -231,6 +231,7 @@ ValueIterationForPolicy<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatri
     
     print(MinForStates)
     print(MaxForStates)
+    print(Tolerance)
   }
   
   if(BoundWidthError<Tolerance)
