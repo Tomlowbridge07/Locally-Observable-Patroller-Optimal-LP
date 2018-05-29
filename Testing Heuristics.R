@@ -2,16 +2,30 @@ source("Simulation of Heuristic.R")
 
 #This function runs our optimality and heuristic policy to compare the answers
 #It runs the optimal policy to find the optimal answer then runs the policy in value iteration
-RunTest<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,HeuristicFunction,HeuristicDepth,IndexForNodeFunction,MaxStepsForIteration)
+RunTest<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,HeuristicFunction,HeuristicDepth,IndexForNodeFunction,MaxStepsForIteration,UseValueItForOptimal=FALSE,ValueItOptMaxSteps=500,ValueItOptTolerance=0.001)
 {
   n=nrow(AdjacencyMatrix)
-  #We first solve for optimality using the dual
-  print("We are going to solve the dual problem first")
-  DualSolved=SolveDualLP(AdjacencyMatrix,n,xVec,bVec,CostVec,LambdaVec)
-  DualObjectiveValue=DualSolved$Value
-  StateSpace=DualSolved$StateSpace
-  print(paste("Dual has been solved for:",toString(DualObjectiveValue)))
   
+  
+  #We first solve for optimality using the dual
+  if(UseValueItForOptimal==FALSE)
+  {
+   print("We are going to solve the dual problem first")
+   DualSolved=SolveDualLP(AdjacencyMatrix,n,xVec,bVec,CostVec,LambdaVec)
+   DualObjectiveValue=DualSolved$Value
+   StateSpace=DualSolved$StateSpace
+   print(paste("Dual has been solved for:",toString(DualObjectiveValue)))
+  }
+  else if(UseValueItForOptimal==TRUE)
+  {
+    #Instead we use value iteration to get the 'optimal' answer
+    print("We are going to solve value iteration to near optimum")
+    DualSolved=ValueIterationForGame(ValueItOptMaxSteps,ValueItOptTolerance,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
+    DualObjectiveValue=DualSolved$LowerBound
+    StateSpace=DualSolved$StateSpace
+    print(paste("Value iteration solved for:",toString(DualObjectiveValue)))
+  }
+
   #We now create the Heuristic policy
   print("We are creating the Heuristic Policy")
   PolicyByHeuristic=HeuristicPolicy(HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,StateSpace)
@@ -31,6 +45,7 @@ RunTest<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,HeuristicFunction,
   
   #We now work out the level of error and return it
   AbsError=ValueItByHeuristic$UpperBound - DualObjectiveValue
+  print(AbsError)
   PercentageError=(AbsError/DualObjectiveValue) *100
   
   AltAbsError=AverageByFunc-DualObjectiveValue
@@ -137,19 +152,38 @@ GenerateAdjConnectedMatrix<-function(NumNodes,NumEdges)
   
   S=sample.int(NumNodes,size=1)
   NS=seq(1,NumNodes,1)
-  NS=NS[any(NS!=S)]
+  NS=NS[NS!=S]
   #We now construct it by connecting
   while(length(NS)!=0)
   {
+    print(NS)
+    print(S)
     #Pick a node at random to be include
-    NodeToBeAdded=sample(NS,size=1)
+    if(length(NS)==1)
+    {
+      NodeToBeAdded=NS
+    }
+    else
+    {
+     NodeToBeAdded=sample(NS,size=1)
+    }
+    
     
     #Now pick a random node to connect it to
-    ConnectionToS=sample(S,size=1)
+    if(length(S)==1)
+    {
+      ConnectionToS=S
+    }
+    else
+    {
+      ConnectionToS=sample(S,size=1)
+    }
+    
     
     #Now add this edge into the graph
     AdjacencyMatrix[NodeToBeAdded,ConnectionToS]=1
     AdjacencyMatrix[ConnectionToS,NodeToBeAdded]=1
+    print(AdjacencyMatrix)
     
     #We now removed this node from not selected and add it to selected
     S=c(S,NodeToBeAdded)
@@ -163,13 +197,22 @@ GenerateAdjConnectedMatrix<-function(NumNodes,NumEdges)
   Consider=Consider & (AdjacencyMatrix==0)
   #Now we add at random these edges into this random spanning tree
   ZerosInMatrix=which(Consider==TRUE)
+  
+  print(ZerosInMatrix)
 
   #Create a matrix which we will later transpose and add on
   AddOn=matrix(0,nrow=NumNodes,ncol=NumNodes)
   
   if(NodesNeeded>0)
   {
-   EdgesToAdd=sample(ZerosInMatrix,size=NodesNeeded)
+    if(length(ZerosInMatrix)==1)
+    {
+      EdgesToAdd=ZerosInMatrix
+    }
+    else
+    {
+      EdgesToAdd=sample(ZerosInMatrix,size=NodesNeeded)
+    }
    AddOn[EdgesToAdd]=1
   }
 
@@ -189,16 +232,18 @@ GenerateAdjConnectedMatrix<-function(NumNodes,NumEdges)
 #Note. The matrix will be connected.
 GenerateTestScenarios<-function(MinNumNodes,MaxNumNodes,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
 {
+  #Note becase of the ceiling we will be using the min-1 instead of min
+  
   #Generating the Matrix
-  NumberOfNodes=sample(MinNumNodes:MaxNumNodes,size=1)
-  NumberOfEdges=sample((NumberOfNodes-1):((NumberOfNodes-1)*NumberOfNodes/2),size=1)
+  NumberOfNodes=ceiling(runif(1,min=MinNumNodes-1,max=MaxNumNodes))
+  NumberOfEdges=ceiling(runif(1,min=(NumberOfNodes-1)-1,max=((NumberOfNodes-1)*NumberOfNodes/2)))
   AdjacencyMatrix=GenerateAdjConnectedMatrix(NumberOfNodes,NumberOfEdges)
   
   n=NumberOfNodes
   
   #Generate the xvec,bvec,lambdavec,costvec
   xVec=runif(n,min=MinAttackTime,max=MaxAttackTime)
-  bVec=runif(n,min=MinObservedSize,max=MaxObservedSize)
+  bVec=ceiling(runif(n,min=MinObservedSize-1,max=MaxObservedSize))
   LambdaVec=runif(n,min=MinArrivalRate,max=MaxArrivalRate)
   CostVec=runif(n,min=MinCost,max=MaxCost)
   
@@ -215,7 +260,45 @@ RunTestForMultipleScenarios<-function(NumberOfScenarios,ListOfHeuristicFunctions
   {
     #For each scenario we generate  the  scenario
     Scenario=GenerateTestScenarios(MinNumNodes,MaxNumNodes,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
+    print("Generated Scenario")
     AdjacencyMatrix=Scenario$AdjacencyMatrix
+    xVec=Scenario$xVec
+    bVec=Scenario$bVec
+    LambdaVec=Scenario$LambdaVec
+    CostVec=Scenario$CostVec
+    
+    ScenarioTest=RunTestForMultipleHeuristics(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration)
+    BestHeuristics=ScenarioTest$BestHeuristics
+    MinError=ScenarioTest$MinError
+    print(BestHeuristics)
+    print(MinError)
+    
+    ScenarioRecording[[ScenarioNumber,1]]=MinError
+    ScenarioRecording[[ScenarioNumber,2]]=BestHeuristics
+    ScenarioRecording[[ScenarioNumber,3]]=AdjacencyMatrix
+    ScenarioRecording[[ScenarioNumber,4]]=xVec
+    ScenarioRecording[[ScenarioNumber,5]]=bVec
+    ScenarioRecording[[ScenarioNumber,6]]=LambdaVec
+    ScenarioRecording[[ScenarioNumber,7]]=CostVec
+    #print(Scenario)
+    
+  }
+  return(ScenarioRecording)
+}
+
+#This function is going to run the test for multiple scenarios- With a fixed complete graph
+RunTestForMultipleScenariosCompleteGraphs<-function(NumberOfScenarios,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration,
+                                      SizeOfCompleteGraph,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
+{
+  #This  matrix  stores the minerror,the best heuristic and the scenario
+  ScenarioRecording=matrix(list(),nrow=NumberOfScenarios,ncol=7)
+  for(ScenarioNumber in 1:NumberOfScenarios)
+  {
+    #For each scenario we generate  the  scenario
+    Scenario=GenerateTestScenarios(SizeOfCompleteGraph,SizeOfCompleteGraph,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
+    print("Generated Scenario")
+    AdjacencyMatrix=matrix(rep(1,SizeOfCompleteGraph*SizeOfCompleteGraph),nrow=SizeOfCompleteGraph)
+    print(AdjacencyMatrix)
     xVec=Scenario$xVec
     bVec=Scenario$bVec
     LambdaVec=Scenario$LambdaVec

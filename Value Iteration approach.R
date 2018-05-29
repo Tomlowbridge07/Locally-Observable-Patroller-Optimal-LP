@@ -154,7 +154,7 @@ ValueIterationForGame<-function(MaxNoSteps,Tolerance,AdjacencyMatrix,xVec,bVec,C
   #This is assumed to be the actions to be performed in the limit (Theoretical justification may be needed)
   EndActions=ActionsMatrix[nrow(ActionsMatrix),]
 
- return(list(LowerBound=LowerBound,UpperBound=UpperBound,Actions=ActionsMatrix,EndActions=EndActions))
+ return(list(LowerBound=LowerBound,UpperBound=UpperBound,Actions=ActionsMatrix,EndActions=EndActions,StateSpace=StateSpace))
 }
 
 #This function works out the value function for a particular policy.
@@ -224,14 +224,21 @@ ValueIterationForPolicy<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatri
     MinForStates=min(CostBetweenSteps)
     
     BoundWidth=MaxForStates-MinForStates
-    BoundWidthError=BoundWidth/MinForStates
+    if(BoundWidth==0)
+    {
+      BoundWidthError=0
+    }
+    else
+    {
+     BoundWidthError=BoundWidth/MinForStates
+    }
+    
     step=step+1
     
     PriorValueFunction=NewValueFunction
     
     print(MinForStates)
     print(MaxForStates)
-    print(Tolerance)
   }
   
   if(BoundWidthError<Tolerance)
