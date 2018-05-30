@@ -2,7 +2,7 @@ source("Optimal solution by LP.R")
 
 #Function to work out the value for a particular number of steps
 #Expects states to be passed as a matrix (with rows being a state with s_1 , s_2,...,s_n,v_1,...,v_2)
-ValueFunction<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,PriorValueFunction=NULL,PriorActionsMatrix=NULL)
+ValueFunction<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,PriorValueFunction=NULL,PriorActionsMatrix=NULL,PrintOutput=FALSE)
 {
   StateSpaceSize=nrow(StateSpace)
   n=nrow(AdjacencyMatrix)
@@ -91,7 +91,7 @@ ValueFunction<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,Lambd
   return(list(Values=ValueVector,Actions=ActionsMatrix))
 }
 
-ValueIteration<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
+ValueIteration<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,PrintOutput=FALSE)
 {
   step=1
   BoundWidthError=Tolerance+1
@@ -99,7 +99,11 @@ ValueIteration<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bV
   PriorActionsMatrix=ValueFunction(0,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)$Actions
   while(step<=MaxNoSteps && BoundWidthError>=Tolerance)
   {
-    print(paste("On Step ",toString(step)))
+    if(PrintOutput)
+    {
+     print(paste("On Step ",toString(step)))
+    }
+   
     
     #Work out the value vector for this number of steps
     New=ValueFunction(step,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,PriorValueFunction,PriorActionsMatrix)
@@ -119,8 +123,12 @@ ValueIteration<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bV
     PriorValueFunction=NewValueFunction
     PriorActionsMatrix=NewActionsMatrix
     
-    print(MinForStates)
-    print(MaxForStates)
+    if(PrintOutput)
+    {
+     print(MinForStates)
+     print(MaxForStates)
+    }
+
   }
   #We need to remove the top row of the NewActionsMatrix
   
@@ -128,17 +136,23 @@ ValueIteration<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bV
   
   if(BoundWidthError<Tolerance)
   {
-    print("Returning due to tolerance reached")
+    if(PrintOutput)
+    {
+      print("Returning due to tolerance reached")
+    }
     return(list(LowerBound=MinForStates,UpperBound=MaxForStates,Actions=TrueActionsMatrix))
   }
   else
   {
-    print("Returning due to time out")
+    if(PrintOutput)
+    {
+     print("Returning due to time out")
+    }
     return(list(LowerBound=MinForStates,UpperBound=MaxForStates,Actions=TrueActionsMatrix))
   }
 }
 
-ValueIterationForGame<-function(MaxNoSteps,Tolerance,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
+ValueIterationForGame<-function(MaxNoSteps,Tolerance,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,PrintOutput=FALSE)
 {
   #Set up games statespace
   BVec=ceiling(xVec)
@@ -146,7 +160,7 @@ ValueIterationForGame<-function(MaxNoSteps,Tolerance,AdjacencyMatrix,xVec,bVec,C
   StateSpace=CreateSVStates(n,BVec,bVec)
   
   #Solve the iteration
-  ValueIt=ValueIteration(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
+  ValueIt=ValueIteration(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,PrintOutput)
   LowerBound=ValueIt$LowerBound
   UpperBound=ValueIt$UpperBound
   ActionsMatrix=ValueIt$Actions
@@ -158,7 +172,7 @@ ValueIterationForGame<-function(MaxNoSteps,Tolerance,AdjacencyMatrix,xVec,bVec,C
 }
 
 #This function works out the value function for a particular policy.
-ValueFunctionForPolicy<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy,PriorValueFunction=NULL)
+ValueFunctionForPolicy<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy,PriorValueFunction=NULL,PrintOutput=FALSE)
 {
   StateSpaceSize=nrow(StateSpace)
   n=nrow(AdjacencyMatrix)
@@ -206,22 +220,29 @@ ValueFunctionForPolicy<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,Cost
   return(ValueVector)
 }
 
-ValueIterationForPolicy<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy)
+ValueIterationForPolicy<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy,PrintOutput=TRUE)
 {
   step=1
   BoundWidthError=Tolerance+1
   PriorValueFunction=ValueFunctionForPolicy(0,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy)
   while(step<=MaxNoSteps && BoundWidthError>=Tolerance)
   {
-    print(paste("On Step ",toString(step)))
+    if(PrintOutput)
+    {
+      print(paste("On Step ",toString(step)))
+    }
+    
     
     #Work out the value vector for this number of steps
     NewValueFunction=ValueFunctionForPolicy(step,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy,PriorValueFunction)
-      
+    
     #For this state calcluate min and max for all states
     CostBetweenSteps=NewValueFunction-PriorValueFunction
     MaxForStates=max(CostBetweenSteps)
     MinForStates=min(CostBetweenSteps)
+    
+    #print(NewValueFunction)
+    #print(CostBetweenSteps)
     
     BoundWidth=MaxForStates-MinForStates
     if(BoundWidth==0)
@@ -237,18 +258,28 @@ ValueIterationForPolicy<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatri
     
     PriorValueFunction=NewValueFunction
     
-    print(MinForStates)
-    print(MaxForStates)
+    if(PrintOutput)
+    {
+     print(MinForStates)
+     print(MaxForStates)
+    }
+
   }
   
   if(BoundWidthError<Tolerance)
   {
-    print("Returning due to tolerance reached")
+    if(PrintOutput)
+    {
+      print("Returning due to tolerance reached")
+    }
     return(list(LowerBound=MinForStates,UpperBound=MaxForStates,ValueFunction=NewValueFunction,StepsRun=step-1))
   }
   else
   {
-    print("Returning due to time out")
+    if(PrintOutput)
+    {
+     print("Returning due to time out")
+    }
     return(list(LowerBound=MinForStates,UpperBound=MaxForStates,ValueFunction=NewValueFunction,StepsRun=step-1))
   }
 }

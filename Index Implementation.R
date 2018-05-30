@@ -137,7 +137,7 @@ EqualStepIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
   }
 }
 
-EqualSplitingIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
+FlatIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
 {
   #First calculate B 
   B=ceiling(x)

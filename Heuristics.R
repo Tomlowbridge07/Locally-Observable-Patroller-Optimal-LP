@@ -106,7 +106,7 @@ DecayToEndCost<-function(n,sVec,vVec,CostVec,LambdaVec,bVec,xVec)
 }
 
 #Here we sum the indices up over the number of steps for all paths of the Number of steps
-MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
+MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL,PrintOutput=FALSE)
 {
   print("Heuristic is Run")
   if(is.null(vMaxVec))
@@ -153,10 +153,13 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
 
         }
       }
-      # print(paste("I am about to compare all paths of length ",toString(Step)))
-      print(Paths)
-      # print("They have a benefit of")
-      print(BenefitForPath)
+
+      if(PrintOutput)
+      {
+       print(Paths)
+       print(BenefitForPath)
+      }
+      
       #Identify the maximal elements
       MaximalElements=which(BenefitForPath==max(BenefitForPath))
 
@@ -212,9 +215,11 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
         
       }
       # print(paste("I am about to compare all paths of length ",toString(Step)))
-       print(Paths)
-      # print("They have a benefit of")
-       print(BenefitForPath)
+      if(PrintOutput)
+      {
+        print(Paths)
+        print(BenefitForPath)
+      }
       #Identify the maximal elements
       MaximalElements=which(BenefitForPath==max(BenefitForPath))
       # print("Printing maximal elements")
@@ -251,8 +256,12 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
     AverageCostForPath[i]=AverageCostForPath[i]+DecayToEndCost(n,EndOfPathState[1:n],EndOfPathState[(n+1):(2*n)],CostVec,LambdaVec,bVec,xVec)
   }
   # print("about to print paths and determinisitic cost of paths")
+  if(PrintOutput)
+  {
    print(BestPathforStep)
    print(AverageCostForPath)
+  }
+
   #Identify the maximal elements
   MinimalElements=which(AverageCostForPath==min(AverageCostForPath))
   #We now choose one at random
@@ -264,7 +273,7 @@ MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
 }
 
 #This is an alternative to the benefit heuristic that looks at the indexs that are not in a given cycle
-MultiStepBenefitHeuristicAlternative<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
+MultiStepBenefitHeuristicAlternative<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL,PrintOutput=FALSE)
 {
   print("Heuristic is Run")
   if(is.null(vMaxVec))
@@ -311,9 +320,14 @@ MultiStepBenefitHeuristicAlternative<-function(NoSteps,n,AdjacencyMatrix,IndexFo
         }
       }
       # print(paste("I am about to compare all paths of length ",toString(Step)))
-      print(Paths)
+      if(PrintOutput)
+      {
+        print(Paths)
+        print(BenefitForPath)
+      }
+      
       # print("They have a benefit of")
-      print(BenefitForPath)
+      
       #Identify the maximal elements
       MaximalElements=which(BenefitForPath==max(BenefitForPath))
       #We now choose one at random
@@ -362,9 +376,11 @@ MultiStepBenefitHeuristicAlternative<-function(NoSteps,n,AdjacencyMatrix,IndexFo
         
       }
       # print(paste("I am about to compare all paths of length ",toString(Step)))
-      print(Paths)
-      # print("They have a benefit of")
-      print(BenefitForPath)
+      if(PrintOutput)
+      {
+        print(Paths)
+        print(BenefitForPath)
+      }
       #Identify the maximal elements
       MaximalElements=which(BenefitForPath==max(BenefitForPath))
       # print("Printing maximal elements")
@@ -391,8 +407,12 @@ MultiStepBenefitHeuristicAlternative<-function(NoSteps,n,AdjacencyMatrix,IndexFo
     AverageCostforPath[i]=DeterministicCostEvaluationOfPath(BestPathforStep[i,],n,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec)$Average
   }
   # print("about to print paths and determinisitic cost of paths")
-  print(BestPathforStep)
-  print(AverageCostforPath)
+  
+  if(PrintOutput)
+  {
+    print(BestPathforStep)
+    print(AverageCostforPath)
+  }
   #Identify the maximal elements
   MinimalElements=which(AverageCostforPath==min(AverageCostforPath))
   #We now choose one at random
@@ -405,7 +425,7 @@ MultiStepBenefitHeuristicAlternative<-function(NoSteps,n,AdjacencyMatrix,IndexFo
 
 
 #Here we sum the indices up over the number of steps for all paths of the Number of steps
-MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL)
+MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL,PrintOutput=FALSE)
 {
   print("Heuristic is Run")
   if(is.null(vMaxVec))
@@ -450,9 +470,14 @@ MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
           PenaltyForPath=c(PenaltyForPath,PenaltyForAction[action])
         }
       }
-      print(Paths)
+      if(PrintOutput)
+      {
+        print(Paths)
+        print(PenaltyForPath)
+      }
+      
 
-      print(PenaltyForPath)
+      
       #Identify the maximal elements
       MinimalElements=which(PenaltyForPath==min(PenaltyForPath))
       #We now choose one at random
@@ -500,8 +525,11 @@ MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
         }
         
       }
-      print(Paths)
-      print(PenaltyForPath)
+      if(PrintOutput)
+      {
+        print(Paths)
+        print(PenaltyForPath)
+      }
       #Identify the maximal elements
       MinimalElements=which(PenaltyForPath==min(PenaltyForPath))
       #We now choose one at random
@@ -535,8 +563,12 @@ MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFuncti
     
   }
   #print(AverageCostforPath)
-  print(BestPathforStep)
-  print(AverageCostForPath)
+  if(PrintOutput)
+  {
+   print(BestPathforStep)
+   print(AverageCostForPath)
+  }
+
   #Identify the maximal elements
   MinimalElements=which(AverageCostForPath==min(AverageCostForPath))
   #We now choose one at random
@@ -586,6 +618,7 @@ HeuristicPolicy<-function(HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,Ind
   {
     #For each state we will find what the Heurisitic tells us to do
     State=StateSpace[StateNumber,]
+    print(State)
     MoveToNode=HeuristicFunction(HeuristicDepth,n,AdjacencyMatrix,IndexForNodeFunction,State[1:n],State[(n+1):(2*n)],CostVec,LambdaVec,bVec,xVec,vMaxVec)
     
     #We record in a list the policy

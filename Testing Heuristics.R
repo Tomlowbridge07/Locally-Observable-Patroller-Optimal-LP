@@ -2,7 +2,8 @@ source("Simulation of Heuristic.R")
 
 #This function runs our optimality and heuristic policy to compare the answers
 #It runs the optimal policy to find the optimal answer then runs the policy in value iteration
-RunTest<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,HeuristicFunction,HeuristicDepth,IndexForNodeFunction,MaxStepsForIteration,UseValueItForOptimal=FALSE,ValueItOptMaxSteps=500,ValueItOptTolerance=0.001)
+RunTest<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,HeuristicFunction,HeuristicDepth,IndexForNodeFunction,MaxStepsForIteration,
+                  UseValueItForOptimal=FALSE,ValueItOptMaxSteps=500,ValueItOptTolerance=0.001,PrintOutput=FALSE)
 {
   n=nrow(AdjacencyMatrix)
   
@@ -10,26 +11,46 @@ RunTest<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,HeuristicFunction,
   #We first solve for optimality using the dual
   if(UseValueItForOptimal==FALSE)
   {
-   print("We are going to solve the dual problem first")
+   if(PrintOutput)
+   {
+     print("We are going to solve the dual problem first")
+   }
    DualSolved=SolveDualLP(AdjacencyMatrix,n,xVec,bVec,CostVec,LambdaVec)
    DualObjectiveValue=DualSolved$Value
    StateSpace=DualSolved$StateSpace
-   print(paste("Dual has been solved for:",toString(DualObjectiveValue)))
+   if(PrintOutput)
+   {
+     print(paste("Dual has been solved for:",toString(DualObjectiveValue)))
+   }
   }
   else if(UseValueItForOptimal==TRUE)
   {
     #Instead we use value iteration to get the 'optimal' answer
-    print("We are going to solve value iteration to near optimum")
+    if(PrintOutput)
+    {
+      print("We are going to solve value iteration to near optimum")
+    }
     DualSolved=ValueIterationForGame(ValueItOptMaxSteps,ValueItOptTolerance,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec)
     DualObjectiveValue=DualSolved$LowerBound
     StateSpace=DualSolved$StateSpace
-    print(paste("Value iteration solved for:",toString(DualObjectiveValue)))
+    if(PrintOutput)
+    {
+     print(paste("Value iteration solved for:",toString(DualObjectiveValue))) 
+    }
+    
   }
 
   #We now create the Heuristic policy
-  print("We are creating the Heuristic Policy")
+  if(PrintOutput)
+  {
+   print("We are creating the Heuristic Policy")
+  }
   PolicyByHeuristic=HeuristicPolicy(HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,StateSpace)
-  print("Policy Has been created")
+  if(PrintOutput)
+  {
+   print("Policy Has been created")
+  }
+  
   
   #Run the Heurstic policy
   #We will select the tolerance to depend on the answer above, because we care about the size of the error we will work to a minimum error of 0.01% so that is we care about a tenthousandth error
@@ -51,13 +72,18 @@ RunTest<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,HeuristicFunction,
   AltAbsError=AverageByFunc-DualObjectiveValue
   AltPercentageError=(AltAbsError/DualObjectiveValue) *100
   
-  print(paste("Percentage Error by Iteration is:",toString(PercentageError)))
-  print(paste("Percentage Error by Function is:",toString(AltPercentageError)))
+  if(PrintOutput)
+  {
+   print(paste("Percentage Error by Iteration is:",toString(PercentageError)))
+   print(paste("Percentage Error by Function is:",toString(AltPercentageError)))
+  }
+
   return(PercentageError)
 }
 
 #The aim of this function is to the run the test (on a scenario) for multiple heuristics
-RunTestForMultipleHeuristics<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration)
+RunTestForMultipleHeuristics<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,
+                                       MaxStepsForIteration,PrintOutput=FALSE)
 {
   NumberOfHeuristicFuncs=length(ListOfHeuristicFunctions)
   NumberOfHeuristicsDepths=length(ListOfHeuristicDepths)
@@ -66,11 +92,19 @@ RunTestForMultipleHeuristics<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaV
   #We solve the dual problem once
   n=nrow(AdjacencyMatrix)
   #We first solve for optimality using the dual
-  print("We are going to solve the dual problem first")
+  if(PrintOutput)
+  {
+   print("We are going to solve the dual problem first")
+  }
+  
   DualSolved=SolveDualLP(AdjacencyMatrix,n,xVec,bVec,CostVec,LambdaVec)
   DualObjectiveValue=DualSolved$Value
   StateSpace=DualSolved$StateSpace
-  print(paste("Dual has been solved for:",toString(DualObjectiveValue)))
+  if(PrintOutput)
+  {
+    print(paste("Dual has been solved for:",toString(DualObjectiveValue)))
+  }
+  
   
   if(DualObjectiveValue>0)
   {
@@ -96,10 +130,21 @@ RunTestForMultipleHeuristics<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaV
       {
         #We now form the policy for the heuristic, at the depth , using the index
         
-        print("We are creating the Heuristic Policy")
+        if(PrintOutput)
+        {
+          print(paste("We are in heurisitic func:",toString(HeuristicFuncNum),
+                      " depth:",toString(HeuristicDepthNum)," index type:",toString(IndexFuncNum)))
+          
+          print("We are creating the Heuristic Policy")
+        }
+        
         PolicyByHeuristic=HeuristicPolicy(ListOfHeuristicDepths[HeuristicDepthNum],ListOfHeuristicFunctions[[HeuristicFuncNum]],
                                           n,AdjacencyMatrix,ListOfIndexForNodeFunctions[[IndexFuncNum]],CostVec,LambdaVec,bVec,xVec,StateSpace)
-        print("Policy Has been created")
+        if(PrintOutput)
+        {
+         print("Policy Has been created")
+        }
+        
         
         #Run the heuristic
         ValueItByHeuristic=ValueIterationForPolicy(MaxStepsForIteration,ToleranceForIt,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,PolicyByHeuristic)
@@ -115,8 +160,12 @@ RunTestForMultipleHeuristics<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaV
         AltAbsError=AverageByFunc-DualObjectiveValue
         AltPercentageError=(AltAbsError/DualObjectiveValue) *100
         
-        print(paste("Percentage Error by Iteration is:",toString(PercentageError)))
-        print(paste("Percentage Error by Function is:",toString(AltPercentageError)))
+        if(PrintOutput)
+        {
+         print(paste("Percentage Error by Iteration is:",toString(PercentageError)))
+         print(paste("Percentage Error by Function is:",toString(AltPercentageError)))
+        }
+
         
         Errors[counter,1]=HeuristicFuncNum
         Errors[counter,2]=HeuristicDepthNum
@@ -156,8 +205,7 @@ GenerateAdjConnectedMatrix<-function(NumNodes,NumEdges)
   #We now construct it by connecting
   while(length(NS)!=0)
   {
-    print(NS)
-    print(S)
+
     #Pick a node at random to be include
     if(length(NS)==1)
     {
@@ -183,7 +231,6 @@ GenerateAdjConnectedMatrix<-function(NumNodes,NumEdges)
     #Now add this edge into the graph
     AdjacencyMatrix[NodeToBeAdded,ConnectionToS]=1
     AdjacencyMatrix[ConnectionToS,NodeToBeAdded]=1
-    print(AdjacencyMatrix)
     
     #We now removed this node from not selected and add it to selected
     S=c(S,NodeToBeAdded)
@@ -198,7 +245,6 @@ GenerateAdjConnectedMatrix<-function(NumNodes,NumEdges)
   #Now we add at random these edges into this random spanning tree
   ZerosInMatrix=which(Consider==TRUE)
   
-  print(ZerosInMatrix)
 
   #Create a matrix which we will later transpose and add on
   AddOn=matrix(0,nrow=NumNodes,ncol=NumNodes)
@@ -217,7 +263,7 @@ GenerateAdjConnectedMatrix<-function(NumNodes,NumEdges)
   }
 
   #Add on the edges symmetrically
-   AdjacencyMatrix=AdjacencyMatrix +AddOn + t(AddOn)
+  AdjacencyMatrix=AdjacencyMatrix +AddOn + t(AddOn)
 
   #We now add diagonal ones
   for(i in 1:NumNodes)
@@ -297,6 +343,7 @@ RunTestForMultipleScenariosCompleteGraphs<-function(NumberOfScenarios,ListOfHeur
     #For each scenario we generate  the  scenario
     Scenario=GenerateTestScenarios(SizeOfCompleteGraph,SizeOfCompleteGraph,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
     print("Generated Scenario")
+    #Force Adjacency Matrix to be complete.
     AdjacencyMatrix=matrix(rep(1,SizeOfCompleteGraph*SizeOfCompleteGraph),nrow=SizeOfCompleteGraph)
     print(AdjacencyMatrix)
     xVec=Scenario$xVec
@@ -322,3 +369,70 @@ RunTestForMultipleScenariosCompleteGraphs<-function(NumberOfScenarios,ListOfHeur
   }
   return(ScenarioRecording)
 }
+
+#This function creates the adjacency matrix for a line graph
+CreateLineGraph<-function(NumNodes)
+{
+  AdjacencyMatrix=matrix(0,nrow=NumNodes,ncol=NumNodes)
+  
+  for(i in 1:NumNodes)
+  {
+    if(i==1)
+    {
+      AdjacencyMatrix[i,i]=1
+      AdjacencyMatrix[i,i+1]=1
+    }
+    else if(i<NumNodes)
+    {
+      AdjacencyMatrix[i,i-1]=1
+      AdjacencyMatrix[i,i]=1
+      AdjacencyMatrix[i,i+1]=1
+    }
+    else if(i==NumNodes)
+    {
+      AdjacencyMatrix[i,i-1]=1
+      AdjacencyMatrix[i,i]=1 
+    }
+  }
+  print(AdjacencyMatrix)
+  return(AdjacencyMatrix)
+}
+
+#This function is going to run the test for multiple scenarios- With a fixed complete graph
+RunTestForMultipleScenariosLineGraphs<-function(NumberOfScenarios,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration,
+                                                    SizeOfLineGraph,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
+{
+  #This  matrix  stores the minerror,the best heuristic and the scenario
+  ScenarioRecording=matrix(list(),nrow=NumberOfScenarios,ncol=7)
+  for(ScenarioNumber in 1:NumberOfScenarios)
+  {
+    #For each scenario we generate  the  scenario
+    Scenario=GenerateTestScenarios(SizeOfLineGraph,SizeOfLineGraph,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
+    print("Generated Scenario")
+    #Force Adjacency Matrix to be complete.
+    AdjacencyMatrix=CreateLineGraph(SizeOfLineGraph)
+    print(AdjacencyMatrix)
+    xVec=Scenario$xVec
+    bVec=Scenario$bVec
+    LambdaVec=Scenario$LambdaVec
+    CostVec=Scenario$CostVec
+    
+    ScenarioTest=RunTestForMultipleHeuristics(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration)
+    BestHeuristics=ScenarioTest$BestHeuristics
+    MinError=ScenarioTest$MinError
+    print(BestHeuristics)
+    print(MinError)
+    
+    ScenarioRecording[[ScenarioNumber,1]]=MinError
+    ScenarioRecording[[ScenarioNumber,2]]=BestHeuristics
+    ScenarioRecording[[ScenarioNumber,3]]=AdjacencyMatrix
+    ScenarioRecording[[ScenarioNumber,4]]=xVec
+    ScenarioRecording[[ScenarioNumber,5]]=bVec
+    ScenarioRecording[[ScenarioNumber,6]]=LambdaVec
+    ScenarioRecording[[ScenarioNumber,7]]=CostVec
+    #print(Scenario)
+    
+  }
+  return(ScenarioRecording)
+}
+
