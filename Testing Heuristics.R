@@ -83,7 +83,7 @@ RunTest<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,HeuristicFunction,
 
 #The aim of this function is to the run the test (on a scenario) for multiple heuristics
 RunTestForMultipleHeuristics<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,
-                                       MaxStepsForIteration,PrintOutput=FALSE)
+                                       MaxStepsForIteration,PrintOutput=TRUE)
 {
   NumberOfHeuristicFuncs=length(ListOfHeuristicFunctions)
   NumberOfHeuristicsDepths=length(ListOfHeuristicDepths)
@@ -108,7 +108,7 @@ RunTestForMultipleHeuristics<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaV
   
   if(DualObjectiveValue>0)
   {
-    ToleranceForIt=10^floor(log10(DualObjectiveValue)-4)
+    ToleranceForIt=10^floor(log10(DualObjectiveValue)-6)
   }
   else
   {
@@ -172,7 +172,7 @@ RunTestForMultipleHeuristics<-function(AdjacencyMatrix,xVec,bVec,CostVec,LambdaV
         Errors[counter,3]=IndexFuncNum
         Errors[counter,4]=PercentageError
         PolicyList[[counter]]=PolicyByHeuristic
-        print(PolicyList)
+        #print(PolicyList)
         counter=counter+1
         
       }
@@ -295,13 +295,51 @@ GenerateTestScenarios<-function(MinNumNodes,MaxNumNodes,MinAttackTime,MaxAttackT
   
   return(list(AdjacencyMatrix=AdjacencyMatrix,xVec=xVec,bVec=bVec,LambdaVec=LambdaVec,CostVec=CostVec))
 }
+
+#This generates a scenario for a fixed
+GenerateTestScenariosVec<-function(NumNodes,MinAttackTimeVec,MaxAttackTimeVec,MinObservedSizeVec,MaxObservedSizeVec,MinArrivalRateVec,
+                                   MaxArrivalRateVec,MinCostVec,MaxCostVec)
+{
+  #Note becase of the ceiling we will be using the min-1 instead of min
+  
+  #Generating the Matrix
+  NumberOfNodes=NumNodes
+  NumberOfEdges=ceiling(runif(1,min=(NumberOfNodes-1)-1,max=((NumberOfNodes-1)*NumberOfNodes/2)))
+  AdjacencyMatrix=GenerateAdjConnectedMatrix(NumberOfNodes,NumberOfEdges)
+  
+  n=NumberOfNodes
+  # print(MinAttackTimeVec)
+  #       print(MaxAttackTimeVec)
+  #       print(MinObservedSizeVec)
+  #       print(MaxObservedSizeVec)
+  #       print(MinArrivalRateVec)
+  #       print(MaxArrivalRateVec)
+  #       print(MinCostVec)
+  #       print(MaxCostVec)
+  #Generate the xvec,bvec,lambdavec,costvec
+        xVec=vector(length=n)
+        bVec=vector(length=n)
+        LambdaVec=vector(length=n)
+        CostVec=vector(length=n)
+  for(i in 1:n)
+  {
+   xVec[i]=runif(1,min=MinAttackTimeVec[i],max=MaxAttackTimeVec[i])
+   bVec[i]=ceiling(runif(1,min=MinObservedSizeVec[i]-1,max=MaxObservedSizeVec[i]))
+   LambdaVec[i]=runif(1,min=MinArrivalRateVec[i],max=MaxArrivalRateVec[i])
+   CostVec[i]=runif(1,min=MinCostVec[i],max=MaxCostVec[i])    
+  }
+
+  
+  return(list(AdjacencyMatrix=AdjacencyMatrix,xVec=xVec,bVec=bVec,LambdaVec=LambdaVec,CostVec=CostVec))
+  
+}
   
 #This function is going to run the test for multiple scenarios
 RunTestForMultipleScenarios<-function(NumberOfScenarios,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration,
                                       MinNumNodes,MaxNumNodes,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
 {
   #This  matrix  stores the minerror,the best heuristic and the scenario
-  ScenarioRecording=matrix(list(),nrow=NumberOfScenarios,ncol=7)
+  ScenarioRecording=matrix(list(),nrow=NumberOfScenarios,ncol=8)
   for(ScenarioNumber in 1:NumberOfScenarios)
   {
     #For each scenario we generate  the  scenario
@@ -316,8 +354,8 @@ RunTestForMultipleScenarios<-function(NumberOfScenarios,ListOfHeuristicFunctions
     ScenarioTest=RunTestForMultipleHeuristics(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration)
     BestHeuristics=ScenarioTest$BestHeuristics
     MinError=ScenarioTest$MinError
-    print(BestHeuristics)
-    print(MinError)
+    Errors=ScenarioTest$Errors
+    print(Errors)
     
     ScenarioRecording[[ScenarioNumber,1]]=MinError
     ScenarioRecording[[ScenarioNumber,2]]=BestHeuristics
@@ -326,6 +364,7 @@ RunTestForMultipleScenarios<-function(NumberOfScenarios,ListOfHeuristicFunctions
     ScenarioRecording[[ScenarioNumber,5]]=bVec
     ScenarioRecording[[ScenarioNumber,6]]=LambdaVec
     ScenarioRecording[[ScenarioNumber,7]]=CostVec
+    ScenarioRecording[[ScenarioNumber,8]]=Errors
     #print(Scenario)
     
   }
@@ -334,18 +373,17 @@ RunTestForMultipleScenarios<-function(NumberOfScenarios,ListOfHeuristicFunctions
 
 #This function is going to run the test for multiple scenarios- With a fixed complete graph
 RunTestForMultipleScenariosCompleteGraphs<-function(NumberOfScenarios,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration,
-                                      SizeOfCompleteGraph,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
+                                      SizeOfCompleteGraph,MinAttackTimeVec,MaxAttackTimeVec,MinObservedSizeVec,MaxObservedSizeVec,MinArrivalRateVec,MaxArrivalRateVec,MinCostVec,MaxCostVec)
 {
   #This  matrix  stores the minerror,the best heuristic and the scenario
-  ScenarioRecording=matrix(list(),nrow=NumberOfScenarios,ncol=7)
+  ScenarioRecording=matrix(list(),nrow=NumberOfScenarios,ncol=8)
+  AdjacencyMatrix=matrix(rep(1,SizeOfCompleteGraph*SizeOfCompleteGraph),nrow=SizeOfCompleteGraph)
   for(ScenarioNumber in 1:NumberOfScenarios)
   {
     #For each scenario we generate  the  scenario
-    Scenario=GenerateTestScenarios(SizeOfCompleteGraph,SizeOfCompleteGraph,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
+    Scenario=GenerateTestScenariosVec(SizeOfCompleteGraph,MinAttackTimeVec,MaxAttackTimeVec,MinObservedSizeVec,MaxObservedSizeVec,MinArrivalRateVec,
+                                   MaxArrivalRateVec,MinCostVec,MaxCostVec)
     print("Generated Scenario")
-    #Force Adjacency Matrix to be complete.
-    AdjacencyMatrix=matrix(rep(1,SizeOfCompleteGraph*SizeOfCompleteGraph),nrow=SizeOfCompleteGraph)
-    print(AdjacencyMatrix)
     xVec=Scenario$xVec
     bVec=Scenario$bVec
     LambdaVec=Scenario$LambdaVec
@@ -354,8 +392,8 @@ RunTestForMultipleScenariosCompleteGraphs<-function(NumberOfScenarios,ListOfHeur
     ScenarioTest=RunTestForMultipleHeuristics(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration)
     BestHeuristics=ScenarioTest$BestHeuristics
     MinError=ScenarioTest$MinError
-    print(BestHeuristics)
-    print(MinError)
+    Errors=ScenarioTest$Errors
+    print(Errors)
     
     ScenarioRecording[[ScenarioNumber,1]]=MinError
     ScenarioRecording[[ScenarioNumber,2]]=BestHeuristics
@@ -364,6 +402,7 @@ RunTestForMultipleScenariosCompleteGraphs<-function(NumberOfScenarios,ListOfHeur
     ScenarioRecording[[ScenarioNumber,5]]=bVec
     ScenarioRecording[[ScenarioNumber,6]]=LambdaVec
     ScenarioRecording[[ScenarioNumber,7]]=CostVec
+    ScenarioRecording[[ScenarioNumber,8]]=Errors
     #print(Scenario)
     
   }
@@ -400,18 +439,16 @@ CreateLineGraph<-function(NumNodes)
 
 #This function is going to run the test for multiple scenarios- With a fixed complete graph
 RunTestForMultipleScenariosLineGraphs<-function(NumberOfScenarios,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration,
-                                                    SizeOfLineGraph,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
+                                                    SizeOfLineGraph,MinAttackTimeVec,MaxAttackTimeVec,MinObservedSizeVec,MaxObservedSizeVec,MinArrivalRateVec,MaxArrivalRateVec,MinCostVec,MaxCostVec)
 {
   #This  matrix  stores the minerror,the best heuristic and the scenario
-  ScenarioRecording=matrix(list(),nrow=NumberOfScenarios,ncol=7)
+  ScenarioRecording=matrix(list(),nrow=NumberOfScenarios,ncol=8)
+  AdjacencyMatrix=CreateLineGraph(SizeOfLineGraph)
   for(ScenarioNumber in 1:NumberOfScenarios)
   {
     #For each scenario we generate  the  scenario
-    Scenario=GenerateTestScenarios(SizeOfLineGraph,SizeOfLineGraph,MinAttackTime,MaxAttackTime,MinObservedSize,MaxObservedSize,MinArrivalRate,MaxArrivalRate,MinCost,MaxCost)
+    Scenario=GenerateTestScenariosVec(SizeOfLineGraph,MinAttackTimeVec,MaxAttackTimeVec,MinObservedSizeVec,MaxObservedSizeVec,MinArrivalRateVec,MaxArrivalRateVec,MinCostVec,MaxCostVec)
     print("Generated Scenario")
-    #Force Adjacency Matrix to be complete.
-    AdjacencyMatrix=CreateLineGraph(SizeOfLineGraph)
-    print(AdjacencyMatrix)
     xVec=Scenario$xVec
     bVec=Scenario$bVec
     LambdaVec=Scenario$LambdaVec
@@ -420,8 +457,8 @@ RunTestForMultipleScenariosLineGraphs<-function(NumberOfScenarios,ListOfHeuristi
     ScenarioTest=RunTestForMultipleHeuristics(AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,ListOfHeuristicFunctions,ListOfHeuristicDepths,ListOfIndexForNodeFunctions,MaxStepsForIteration)
     BestHeuristics=ScenarioTest$BestHeuristics
     MinError=ScenarioTest$MinError
-    print(BestHeuristics)
-    print(MinError)
+    Errors=ScenarioTest$Errors
+    print(Errors)
     
     ScenarioRecording[[ScenarioNumber,1]]=MinError
     ScenarioRecording[[ScenarioNumber,2]]=BestHeuristics
@@ -430,6 +467,7 @@ RunTestForMultipleScenariosLineGraphs<-function(NumberOfScenarios,ListOfHeuristi
     ScenarioRecording[[ScenarioNumber,5]]=bVec
     ScenarioRecording[[ScenarioNumber,6]]=LambdaVec
     ScenarioRecording[[ScenarioNumber,7]]=CostVec
+    ScenarioRecording[[ScenarioNumber,8]]=Errors
     #print(Scenario)
     
   }

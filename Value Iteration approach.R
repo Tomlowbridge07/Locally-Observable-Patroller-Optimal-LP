@@ -220,7 +220,7 @@ ValueFunctionForPolicy<-function(Steps,StateSpace,AdjacencyMatrix,xVec,bVec,Cost
   return(ValueVector)
 }
 
-ValueIterationForPolicy<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy,PrintOutput=TRUE)
+ValueIterationForPolicy<-function(MaxNoSteps,Tolerance,StateSpace,AdjacencyMatrix,xVec,bVec,CostVec,LambdaVec,Policy,PrintOutput=FALSE)
 {
   step=1
   BoundWidthError=Tolerance+1

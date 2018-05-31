@@ -108,7 +108,11 @@ DecayToEndCost<-function(n,sVec,vVec,CostVec,LambdaVec,bVec,xVec)
 #Here we sum the indices up over the number of steps for all paths of the Number of steps
 MultiStepBenefitHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL,PrintOutput=FALSE)
 {
-  print("Heuristic is Run")
+  if(PrintOutput)
+  {
+   print("Heuristic is Run")
+  }
+  
   if(is.null(vMaxVec))
   {
     #Create vMaxVec
@@ -427,7 +431,10 @@ MultiStepBenefitHeuristicAlternative<-function(NoSteps,n,AdjacencyMatrix,IndexFo
 #Here we sum the indices up over the number of steps for all paths of the Number of steps
 MultiStepPenaltyHeuristic<-function(NoSteps,n,AdjacencyMatrix,IndexForNodeFunction,sVec,vVec,CostVec,LambdaVec,bVec,xVec,vMaxVec=NULL,PrintOutput=FALSE)
 {
-  print("Heuristic is Run")
+  if(PrintOutput)
+  {
+    print("Heuristic is Run")
+  }
   if(is.null(vMaxVec))
   {
     #Create vMaxVec
@@ -604,7 +611,7 @@ StartingNodeHeuristic<-function(n,IndexForNodeFunction,CostVec,LambdaVec,bVec,xV
   return(BestStart)
 }
 
-HeuristicPolicy<-function(HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,StateSpace=NULL,vMaxVec=NULL)
+HeuristicPolicy<-function(HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,IndexForNodeFunction,CostVec,LambdaVec,bVec,xVec,StateSpace=NULL,vMaxVec=NULL,PrintOutput=FALSE)
 {
   BVec=ceiling(xVec)
   Policy=list()
@@ -618,7 +625,10 @@ HeuristicPolicy<-function(HeuristicDepth,HeuristicFunction,n,AdjacencyMatrix,Ind
   {
     #For each state we will find what the Heurisitic tells us to do
     State=StateSpace[StateNumber,]
-    print(State)
+    if(PrintOutput)
+    {
+      print(State)
+    }
     MoveToNode=HeuristicFunction(HeuristicDepth,n,AdjacencyMatrix,IndexForNodeFunction,State[1:n],State[(n+1):(2*n)],CostVec,LambdaVec,bVec,xVec,vMaxVec)
     
     #We record in a list the policy
