@@ -71,6 +71,44 @@ Delta<-function(tilde=FALSE,CostAtNode,Lambda,b,x,v,vMax)
   }
 }
 
+OldPlainIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
+{
+  #First calculate B 
+  B=ceiling(x)
+  
+  
+  stopifnot(s <= (B+1))
+  stopifnot(v <= (b+1))
+  # print(s)
+  # print(v)
+  # print(vMax)
+  
+  if(s < B)
+  {
+    return(0)
+  }
+  else if(s==B && v < (vMax+1))
+  {
+    return(Delta(tilde = FALSE,Cost,Lambda,b,x,v,vMax))
+  }
+  else if(s==B && v >= (vMax+1))
+  {
+    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v,vMax))
+  }
+  else if(s==(B+1) && v < (vMax))
+  {
+    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v+1,vMax))
+  }
+  else if(s==(B+1) && v >= (vMax))
+  {
+    return(Delta(tilde = TRUE,Cost,Lambda,b,x,v+1,vMax))
+  }
+  else
+  {
+    print("Error")
+  }
+}  
+
 PlainIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
 {
   #First calculate B 
