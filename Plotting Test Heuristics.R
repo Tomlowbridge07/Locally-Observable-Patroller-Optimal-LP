@@ -2,6 +2,7 @@ source("Testing Heuristics.R")
 
 library(ggplot2)
 library(reshape)
+library(tikzDevice)
 
 #This R file contains functions which take in the Test Matrix and return values
 #Test Matrices come in the order MinError,BestHeuristics,AdjMatrix,AttackTimes,Capacity,Lambda,Costs,Whole Errors
@@ -89,7 +90,7 @@ PlotHeuristicErrorData<-function(HeuristicErrors,NumberOfCategories,MaxErrorCate
   
 #Plot a group of heuristics
 #Note the heuristic erros should be provided in a matrix of rows for each heuristic
-PlotMultipleHeuristicErrorData<-function(HeuristicErrors,NumberOfCategories,MaxErrorCategory)
+PlotMultipleHeuristicErrorData<-function(HeuristicErrors,NumberOfCategories,MaxErrorCategory,HeuristicNames=NULL,SaveTexImage=F,FileName=NULL,Size=c(3,2))
 {
   #First we look at how many graphs we are going to plot
   NumHeuristics=nrow(HeuristicErrors)
@@ -107,14 +108,38 @@ PlotMultipleHeuristicErrorData<-function(HeuristicErrors,NumberOfCategories,MaxE
     YCoordinates=matrix(0,ncol=length(Categorized$NumberInEachCategory),nrow=NumHeuristics)
     XCoordinates=Categorized$CategoryMidPoints
     YCoordinates[i,]=Categorized$NumberInEachCategory
-    XYCoordinates=data.frame(XCoordinates,YCoordinates[i,])
+    YCoordinates[i,]=YCoordinates[i,]/sum(YCoordinates[i,])
+    Ydataframecol<-data.frame(YCoordinates[i,])
+    
+    if(is.null(HeuristicNames))
+    {
+      names(Ydataframecol)=paste("YCoordinates",toString(i))
+    }
+    else
+    {
+      names(Ydataframecol)=toString(HeuristicNames[i])
+    }    
+                                          
+                                          
+    XYCoordinates=data.frame(XCoordinates)
+    XYCoordinates<-cbind(XYCoordinates,Ydataframecol)
+    
     }
     else
     {
       Categorized=CategorizeHeuristicErrorData(HeuristicErrors[i,],NumberOfCategories,MaxErrorCategory)
       YCoordinates[i,]=Categorized$NumberInEachCategory
+      YCoordinates[i,]=YCoordinates[i,]/sum(YCoordinates[i,])
       Ydataframecol<-data.frame(YCoordinates[i,])
-      names(Ydataframecol)=paste("YCoordinates",toString(i))
+      if(is.null(HeuristicNames))
+      {
+        names(Ydataframecol)=paste("YCoordinates",toString(i))
+      }
+      else
+      {
+        names(Ydataframecol)=toString(HeuristicNames[i])
+      }
+      
       XYCoordinates<-cbind(XYCoordinates,Ydataframecol)
     }
  print(XYCoordinates)
@@ -126,8 +151,19 @@ PlotMultipleHeuristicErrorData<-function(HeuristicErrors,NumberOfCategories,MaxE
   MeltedDataFrame<-melt(DataFrame,id="XCoordinates")
   print(MeltedDataFrame)
   
+  if(SaveTexImage)
+  {
+    tikz(file=paste("/local/pmxtol/Dropbox/",toString(FileName),".tex",sep=""),width=Size[1],height=Size[2])
+  }
+  
   Plot<-ggplot(MeltedDataFrame,aes(x=XCoordinates,y=value,color=variable),show.legend='True') + #geom_point()+
-       geom_line()
+       geom_line() +xlab("Percentage Error")+ylab("Frequency Density") + labs(color="Heuristic Type")
+  if(SaveTexImage)
+  {
+    print(Plot)
+    dev.off()  
+  }
+  
   print(Plot)
   return(Plot)
   
