@@ -1,4 +1,5 @@
 source("Simulation of Heuristic.R")
+source("Value Iteration approach.R")
 
 #This function runs our optimality and heuristic policy to compare the answers
 #It runs the optimal policy to find the optimal answer then runs the policy in value iteration
