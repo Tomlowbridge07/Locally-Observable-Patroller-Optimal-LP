@@ -485,61 +485,78 @@ IdenityRow<-function(Vec,Mat)
   return(-1)
 }
 
-#Action Cost C_j
+# #Action Cost C_j
+# CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)
+# {
+#   stopifnot(length(StateVector)==2*n)
+#   
+#   BVec=ceiling(xVec)
+#   RVec=BVec-xVec
+#   
+#   if(StateVector[Node]<BVec[Node])
+#   {
+#     return(0)
+#   }
+#   else if(StateVector[Node]==BVec[Node])
+#   {
+#     if(NodeMovedTo==Node)
+#     {
+#       # if(xVec[Node]>1)
+#       # {
+#       #   return(CostVec[Node] * (LambdaVec[Node] * (BVec[Node]-xVec[Node]) + StateVector[n+Node]))
+#       # }
+#       # else if(xVec[Node] <= 1)
+#       # {
+#       #   return(CostVec[Node] * StateVector[n+Node])
+#       # }
+#       return(0)
+#     }
+#     else
+#     {
+#       return(CostVec[Node] * ((LambdaVec[Node] * RVec[Node]) + StateVector[n+Node]))
+#     }
+#   }
+#   else if(StateVector[Node]==BVec[Node]+1)
+#   {
+#     if(NodeMovedTo==Node)
+#     {
+#       # if(xVec[Node]>1)
+#       # {
+#       #   return(CostVec[Node] * LambdaVec[Node])
+#       # }
+#       # else if(xVec[Node] <= 1)
+#       # {
+#       #   return(CostVec[Node] * LambdaVec[Node] * xVec[Node])
+#       # }
+#       return(0)
+#     }
+#     else
+#     {
+#       return(CostVec[Node] * LambdaVec[Node])
+#     }
+#   }
+#   else
+#   {
+#     print("An error has occured in the cost of a node function")
+#   }
+# }
+
 CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)
 {
-  stopifnot(length(StateVector)==2*n)
-  
   BVec=ceiling(xVec)
-  RVec=BVec-xVec
-  
-  if(StateVector[Node]<BVec[Node])
+  if(StateVector[Node]==BVec[Node])
   {
-    return(0)
+    return(CostVec[Node]*LambdaVec[Node]*(BVec[Node]-xVec[Node]))
   }
-  else if(StateVector[Node]==BVec[Node])
+  else if(StateVector[Node]==(BVec[Node]+1))
   {
-    if(NodeMovedTo==Node)
-    {
-      # if(xVec[Node]>1)
-      # {
-      #   return(CostVec[Node] * (LambdaVec[Node] * (BVec[Node]-xVec[Node]) + StateVector[n+Node]))
-      # }
-      # else if(xVec[Node] <= 1)
-      # {
-      #   return(CostVec[Node] * StateVector[n+Node])
-      # }
-      return(0)
-    }
-    else
-    {
-      return(CostVec[Node] * ((LambdaVec[Node] * RVec[Node]) + StateVector[n+Node]))
-    }
-  }
-  else if(StateVector[Node]==BVec[Node]+1)
-  {
-    if(NodeMovedTo==Node)
-    {
-      # if(xVec[Node]>1)
-      # {
-      #   return(CostVec[Node] * LambdaVec[Node])
-      # }
-      # else if(xVec[Node] <= 1)
-      # {
-      #   return(CostVec[Node] * LambdaVec[Node] * xVec[Node])
-      # }
-      return(0)
-    }
-    else
-    {
-      return(CostVec[Node] * LambdaVec[Node])
-    }
+    return(CostVec[Node]*LambdaVec[Node])
   }
   else
   {
-    print("An error has occured in the cost of a node function")
+    return(0)
   }
-}
+}  
 
 #Total action cost
 CostOfAction<-function(StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)

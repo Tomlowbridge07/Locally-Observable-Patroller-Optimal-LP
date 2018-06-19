@@ -71,6 +71,29 @@ Delta<-function(tilde=FALSE,CostAtNode,Lambda,b,x,v,vMax)
   }
 }
 
+#This index is for use with the no local-observations
+PlainIndexForDetCostNode<-function(s,v,Cost,Lambda,b,x,vMax)
+{
+  B=ceiling(x)
+  if(v!=0)
+  {
+    print("Error")
+  }
+  
+  if(s<B)
+  {
+    return(0)
+  }
+  else if(s==B)
+  {
+    return(Cost*Lambda*(B-x))
+  }
+  else if(s==B+1)
+  {
+    return(Cost*Lambda)
+  }
+}
+
 OldPlainIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
 {
   #First calculate B 
