@@ -94,6 +94,29 @@ PlainIndexForDetCostNode<-function(s,v,Cost,Lambda,b,x,vMax)
   }
 }
 
+#This index is for use with no local observations and instaneous movement
+PlainIndexForInstantlyMovingDet<-function(s,v,Cost,Lambda,b,x,vMax)
+{
+  B=ceiling(x)
+  if(v!=0)
+  {
+    print("Error")
+  }
+  
+  if(s < B)
+  {
+    return(0)
+  }
+  else if(s == B)
+  {
+    return(B*Cost*Lambda*(B-x))
+  }
+  else if(s==B+1)
+  {
+    return((1+x)*Cost*Lambda)
+  }
+}
+
 #This index is for use with the no local-observations
 EqualPenaltyIndexForDetCostNode<-function(s,v,Cost,Lambda,b,x,vMax)
 {

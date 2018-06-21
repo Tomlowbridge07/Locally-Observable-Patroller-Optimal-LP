@@ -541,22 +541,45 @@ IdenityRow<-function(Vec,Mat)
 #   }
 # }
 
-#Moving non-instaneously old det cost
+# #Moving non-instaneously old det cost
+# CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)
+# {
+#   BVec=ceiling(xVec)
+#   if(StateVector[Node]==BVec[Node])
+#   {
+#     return(CostVec[Node]*LambdaVec[Node]*(BVec[Node]-xVec[Node]))
+#   }
+#   else if(StateVector[Node]==(BVec[Node]+1))
+#   {
+#     return(CostVec[Node]*LambdaVec[Node])
+#   }
+#   else
+#   {
+#     return(0)
+#   }
+# }
+
+#Instantly moving det cost
 CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)
 {
   BVec=ceiling(xVec)
-  if(StateVector[Node]==BVec[Node])
-  {
-    return(CostVec[Node]*LambdaVec[Node]*(BVec[Node]-xVec[Node]))
-  }
-  else if(StateVector[Node]==(BVec[Node]+1))
-  {
-    return(CostVec[Node]*LambdaVec[Node])
-  }
-  else
+  if(Node==NodeMovedTo)
   {
     return(0)
   }
+  else if(StateVector[Node] < BVec[Node])
+  {
+    return(0)
+  }
+  else if(StateVector[Node]==BVec[Node])
+  {
+    return(CostVec[Node] * LambdaVec[Node] * (BVec[Node]-xVec[Node]))
+  }
+  else if(StateVector[Node]==(BVec[Node]+1))
+  {
+    return(CostVec[Node] * LambdaVec[Node])
+  }
+  
 }
 
 
