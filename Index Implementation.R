@@ -94,6 +94,89 @@ PlainIndexForDetCostNode<-function(s,v,Cost,Lambda,b,x,vMax)
   }
 }
 
+#This index is for use with the no local-observations
+EqualPenaltyIndexForDetCostNode<-function(s,v,Cost,Lambda,b,x,vMax)
+{
+  B=ceiling(x)
+  if(v!=0)
+  {
+    print("Error")
+  }
+  
+  if(s <= B)
+  {
+    return((Cost*Lambda*(B-x))/B)
+  }
+  else if(s==B+1)
+  {
+    return(Cost*Lambda)
+  }
+}
+
+#This index is for use with the no local-observations
+EqualBenefitIndexForDetCostNode<-function(s,v,Cost,Lambda,b,x,vMax)
+{
+  B=ceiling(x)
+  if(v!=0)
+  {
+    print("Error")
+  }
+  
+  if(s <= B)
+  {
+    return((s*Cost*Lambda*(B-x))/B)
+  }
+  else if(s==B+1)
+  {
+    return(Cost*Lambda)
+  }
+}
+
+#This index is for use with the no local-observations
+UnequalPenaltyForDetCostNode<-function(s,v,Cost,Lambda,b,x,vMax)
+{
+  B=ceiling(x)
+  if(v!=0)
+  {
+    print("Error")
+  }
+  
+  if(s <= B)
+  {
+    return((2*s*Cost*Lambda*(B-x))/(B+1))
+  }
+  else if(s==B+1)
+  {
+    return(Cost*Lambda)
+  }
+}
+
+#This index is for use with the no local-observations
+UnequalBenefitIndexForDetCostNode<-function(s,v,Cost,Lambda,b,x,vMax)
+{
+  B=ceiling(x)
+  if(v!=0)
+  {
+    print("Error")
+  }
+  
+  if(s <= B)
+  {
+    #We must work out the sum of all lesser and equal s
+    Sum=0
+    for(i in 1:s)
+    {
+      Sum=Sum+((2*i*B)/(B+1)) 
+    }
+    return((Sum*Cost*Lambda*(B-x))/B)
+  }
+  else if(s==B+1)
+  {
+    return(Cost*Lambda)
+  }
+}
+
+#For use with LOCAL-OBSERVATIONS :)
 OldPlainIndexForNode<-function(s,v,Cost,Lambda,b,x,vMax)
 {
   #First calculate B 

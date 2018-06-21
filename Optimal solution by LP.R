@@ -541,6 +541,7 @@ IdenityRow<-function(Vec,Mat)
 #   }
 # }
 
+#Moving non-instaneously old det cost
 CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)
 {
   BVec=ceiling(xVec)
@@ -556,7 +557,8 @@ CostOfActionOnNode<-function(Node,StateVector,NodeMovedTo,n,CostVec,xVec,LambdaV
   {
     return(0)
   }
-}  
+}
+
 
 #Total action cost
 CostOfAction<-function(StateVector,NodeMovedTo,n,CostVec,xVec,LambdaVec)
